@@ -245,3 +245,69 @@ def test_close_driver_clears_detected_identity_even_when_quit_fails(make_config_
     manager.close_driver()
     assert manager.driver is None
     assert manager.logged_in_handle is None
+
+
+@pytest.mark.parametrize('href,expected', [
+    ('https://x.com/Synthetic_User', 'Synthetic_User'),
+    ('https://x.com/Synthetic_User/', 'Synthetic_User'),
+    ('https://X.COM:443/Synthetic_User', 'Synthetic_User'),
+    ('https://www.x.com/Synthetic_User', 'Synthetic_User'),
+    ('https://mobile.x.com/Synthetic_User', 'Synthetic_User'),
+    ('https://twitter.com/Synthetic_User', 'Synthetic_User'),
+    ('https://www.twitter.com/Synthetic_User', 'Synthetic_User'),
+    ('https://mobile.twitter.com/Synthetic_User', 'Synthetic_User'),
+    ('https://x.com/Synthetic_User?ref=private-marker#section', 'Synthetic_User'),
+    ('https://not-x.com/Victim', None),
+    ('https://evil.invalid/x.com/Victim', None),
+    ('https://x.com.evil.invalid/Victim', None),
+    ('https://untrusted.x.com/Victim', None),
+    ('https://evil.invalid/?redirect=https://x.com/Victim', None),
+    ('https://evil.invalid/#https://x.com/Victim', None),
+    ('https://x.com@evil.invalid/Victim', None),
+    ('https://private-marker@x.com/Victim', None),
+    ('https://user:private-marker@x.com/Victim', None),
+    ('https://x.com:8443/Victim', None),
+    ('https://x.com:bad/Victim', None),
+    ('http://x.com/Victim', None),
+    ('javascript:https://x.com/Victim', None),
+    ('//x.com/Victim', None),
+    ('/Victim', None),
+    ('https://x.com/', None),
+    ('https://x.com/Victim/status/123', None),
+    ('https://x.com//Victim', None),
+    ('https://x.com/@Victim', None),
+    ('https://x.com/%56ictim', None),
+    ('https://x.com/abcdefghijklmnop', None),
+    ('https://x.com/Victım', None),
+    ('https://x.com/Victim\\other', None),
+    ('https://x.com/Vi\nctim', None),
+    ('\thttps://x.com/Victim', None),
+    ('https://[x.com/Victim', None),
+    ('', None),
+    (None, None),
+    (123, None),
+])
+def test_profile_identity_requires_a_real_profile_url(
+    make_config_loader, tmp_path, monkeypatch, caplog, href, expected
+):
+    """Untrusted DOM links must not corrupt the own-post avoidance identity."""
+    manager = make_manager(make_config_loader, tmp_path)
+    driver = FakeWebDriver()
+    patch_driver_start(monkeypatch, driver)
+    monkeypatch.setattr('xuse.core.browser_manager.service.wait_for_signed_in',
+                        lambda *_args, **_kwargs: True)
+
+    class ProfileLink:
+        def get_attribute(self, name):
+            assert name == 'href'
+            return href
+
+    driver.find_element = lambda *_args: ProfileLink()
+    with caplog.at_level('INFO'):
+        try:
+            assert manager.get_driver() is driver
+            assert manager.logged_in_handle == expected
+            assert 'private-marker' not in caplog.text
+        finally:
+            manager.close_driver()
+    assert driver.quit_called

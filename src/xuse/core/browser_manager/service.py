@@ -1,6 +1,8 @@
 import logging
+import re
 from pathlib import Path
 from typing import List, Dict, Optional, Any
+from urllib.parse import urlsplit
 
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.common.exceptions import WebDriverException, TimeoutException
@@ -24,6 +26,28 @@ except Exception:  # pragma: no cover - fallback for various runner contexts
     from xuse.utils.login_state import wait_for_signed_in  # type: ignore
 
 logger = logging.getLogger(__name__)
+
+_PROFILE_HOSTS = {
+    "x.com", "www.x.com", "mobile.x.com",
+    "twitter.com", "www.twitter.com", "mobile.twitter.com",
+}
+
+
+def _profile_handle_from_url(value: Any) -> Optional[str]:
+    """Read only an X profile path, never identity text embedded in another URL."""
+    if (not isinstance(value, str) or len(value) > 8192
+            or re.search(r"[\x00-\x20\x7f\\]", value)):
+        return None
+    try:
+        parsed = urlsplit(value)
+        if (parsed.scheme != "https" or parsed.hostname not in _PROFILE_HOSTS
+                or parsed.port not in (None, 443)
+                or parsed.username is not None or parsed.password is not None):
+            return None
+    except ValueError:
+        return None
+    match = re.fullmatch(r"/([A-Za-z0-9_]{1,15})/?", parsed.path)
+    return match.group(1) if match else None
 
 
 class BrowserManager:
@@ -178,11 +202,10 @@ class BrowserManager:
                     from selenium.webdriver.common.by import By  # local import
                     profile_link = self.driver.find_element(By.XPATH, "//a[@data-testid='AppTabBar_Profile_Link']")
                     href = profile_link.get_attribute('href') if profile_link else None
-                    if href and 'x.com/' in href:
-                        handle = href.rstrip('/').split('x.com/')[-1]
-                        if handle:
-                            self.logged_in_handle = handle.lstrip('@')
-                            logger.info(f"Detected logged-in handle: @{self.logged_in_handle}")
+                    handle = _profile_handle_from_url(href)
+                    if handle:
+                        self.logged_in_handle = handle
+                        logger.info(f"Detected logged-in handle: @{self.logged_in_handle}")
                 except Exception:
                     pass
             else:

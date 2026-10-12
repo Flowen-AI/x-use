@@ -82,6 +82,9 @@ project follows [semantic versioning](https://semver.org/). See
 - Selenium closes partially initialized browsers, verifies the X cookie origin,
   and avoids logging driver errors that can echo cookies. Publishing rejects
   incomplete media preparation and stale or unrelated success evidence.
+- Legacy signed-in profile detection parses exact HTTPS X/Twitter hosts and a
+  valid handle path. Deceptive domains, embedded URLs and query text cannot
+  corrupt the identity used for own-post avoidance.
 - Runtime diagnostics report configured async/Selenium workflow support and
   effective unlock policy without reading account journals or starting a browser.
 - Inbox controls recognize the current Conversation info route and its bound
