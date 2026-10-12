@@ -37,7 +37,7 @@ dependencies = [
     "undetected-chromedriver",
     "selenium-stealth",
     "typer>=0.12",
-    "mcp>=1.30.0,<2",  # required for ToolAnnotations and structuredContent support
+    "mcp>=2.3.0,<3",  # required for ToolAnnotations and structuredContent support
 ]
 
 [project.urls]
