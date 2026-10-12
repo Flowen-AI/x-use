@@ -198,9 +198,12 @@ See [CONTRIBUTING](https://github.com/ihuzaifashoukat/x-use/blob/main/CONTRIBUTI
 
 ## Star history
 
-[![x-use star history — dated snapshot of cumulative stars from current stargazers](https://raw.githubusercontent.com/ihuzaifashoukat/x-use/c2f368aa7b6673c31a9573711e5e55affa77e73a/assets/star-history.svg)](https://github.com/ihuzaifashoukat/x-use/stargazers)
-
-Snapshot: **12 October 2026**. Removed stars are not included. The badge above shows the current total; [maintainers can refresh this chart](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/BRAND.md#publication).
+<a href="https://www.star-history.com/?repos=ihuzaifashoukat%2Fx-use&amp;type=date&amp;legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ihuzaifashoukat/x-use&amp;type=date&amp;legend=top-left&amp;theme=dark" />
+    <img alt="Live star history for x-use" src="https://api.star-history.com/svg?repos=ihuzaifashoukat/x-use&amp;type=date&amp;legend=top-left" />
+  </picture>
+</a>
 
 ## License
 

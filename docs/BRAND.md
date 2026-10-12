@@ -20,7 +20,7 @@ The README uses the JPEG, including the logo on a white background that remains 
 
 GitHub's repository social preview is a separate setting. The JPEG was uploaded and visually verified there on 2026-10-12. For future updates, use Settings → Social preview; changing the repository file alone does not change that setting. The older assets/social-preview.png remains as a legacy asset.
 
-The README star-history image is a dated snapshot hosted in the repository. Regenerate it with `uv run --no-project --with matplotlib python scripts/update_star_history.py`, review the image, and update the pinned README asset URL in the same PR. The script uses local GitHub CLI authentication and publishes aggregate counts only; it does not send a token to an external chart service. The separate stars badge shows the current total.
+The README embeds the live Star History SVG service with light and dark themes. The image updates through the service without a repository commit; GitHub's image proxy may cache it. No access token is included in the embed. Verify the plotted curve in the rendered GitHub README when changing the URL; a direct command-line download can fail while the browser image works.
 
 Use the name and icon consistently in Registry and directory metadata after their HTTPS asset URLs are publicly available. x-use is independent of X; the brand does not imply platform endorsement.
 
