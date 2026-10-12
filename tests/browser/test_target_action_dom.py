@@ -15,6 +15,23 @@ def card(identifier):
       </article>'''
 
 
+async def test_read_rechecks_target_after_initial_card_hydration(app):
+    app.document('/person/status/123', '<div id="mount"></div><script>'
+                 'setTimeout(() => document.querySelector("#mount").innerHTML = '
+                 + __import__('json').dumps(card('123')) + ', 250)</script>')
+    tweets = await app.adapter.get_tweet('https://x.com/person/status/123')
+    assert [tweet.tweet_id for tweet in tweets] == ['123']
+
+
+async def test_read_waits_for_target_when_parent_hydrates_first(app):
+    app.document('/person/status/123', card('456') + '<div id="mount"></div><script>'
+                 'setTimeout(() => document.querySelector("#mount").innerHTML = '
+                 + __import__('json').dumps(card('123')) + ', 350)</script>')
+    tweets = await app.adapter.get_tweet('https://x.com/person/status/123')
+    assert [tweet.tweet_id for tweet in tweets] == ['123']
+    assert tweets[0].view_count is None
+
+
 async def test_recycled_positional_card_cannot_like_another_post(app):
     app.document("/person/status/123", card("123") + card("456"))
     original = app.adapter._wait_visible

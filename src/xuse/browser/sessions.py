@@ -1,5 +1,6 @@
 """Lazy, bounded browser contexts with per-account and process ownership locks."""
 import asyncio
+import errno
 import hashlib
 import ipaddress
 import inspect
@@ -19,9 +20,13 @@ from typing import Any, Dict, Iterator, Optional
 from urllib.parse import unquote, urlsplit
 
 from xuse.core.config_loader import normalize_account_dict
+from xuse.utils.proxy_manager import validate_proxy_url
 
 from .cookies import load_account_cookies
 from .errors import SessionError
+
+
+_PROCESS_DRAIN_TIMEOUT_SECONDS = 10.0
 
 
 class _ProcessInspector:
@@ -310,8 +315,11 @@ class _OwnedBrowserProcesses:
         self.complete = not self.pending and not self.scan_failed
 
     def exited(self):
-        if self.job is not None:
-            return self.inspector.job_exited(self.job)
+        if self.job is not None and not self.inspector.job_exited(self.job):
+            return False
+        # Windows Job accounting can reach zero while processes are still
+        # terminating and their pinned handles remain nonsignaled. Releasing
+        # account ownership requires actual exit, not the start of teardown.
         return self.complete and all(not process.alive() for process in self.processes.values())
 
     def terminate(self):
@@ -376,15 +384,20 @@ class AccountOwnerLock:
                     stream.write(b"\0")
                     stream.flush()
                 stream.seek(0)
-                if os.name == "nt":
-                    import msvcrt
-                    msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
-                else:
-                    import fcntl
-                    fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except OSError:
+                try:
+                    if os.name == "nt":
+                        import msvcrt
+                        msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+                    else:
+                        import fcntl
+                        fcntl.flock(stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except OSError as error:
+                    if error.errno in {errno.EACCES, errno.EAGAIN, errno.EWOULDBLOCK}:
+                        raise SessionError("account_in_use") from None
+                    raise
+            except (OSError, SessionError):
                 stream.close()
-                raise SessionError("account_in_use") from None
+                raise
             self._file = stream
         except SessionError:
             raise
@@ -435,6 +448,7 @@ def _proxy_config(value: Any) -> Optional[dict]:
     if not isinstance(value, str):
         raise SessionError("invalid_proxy")
     try:
+        value = validate_proxy_url(value, allow_environment=False)
         if len(value) > 8192 or any(ord(char) < 32 or ord(char) == 127 for char in value):
             raise ValueError()
         value = value.strip()
@@ -556,12 +570,19 @@ class PlaywrightSessionPool:
         self._browser = None
         self._reaper_task = None
         self._start_tasks = set()
+        self._starting_accounts = set()
+        self._account_starts = {}
+        self._account_generations = {}
+        self._config_close_tasks = {}
+        self._cancelled_starts = set()
         self._cleanup_tasks = set()
         self._stranded_owners = set()
         self._process_guard = None
         self._process_guard_lock = asyncio.Lock()
         self._capture_task = None
         self._shutdown_task = None
+        self._retire_task = None
+        self._runtime_last_used = time.monotonic()
         self._closed = False
 
     @property
@@ -571,6 +592,42 @@ class PlaywrightSessionPool:
     def entry_for(self, account_id: str) -> Optional[SessionEntry]:
         return self._entries.get(account_id)
 
+    def session_status(self, account_id: str) -> dict:
+        """Local lifecycle metadata; transport readiness is not authentication.
+
+        Driver flags are synchronous and do not load cookies, open pages or
+        touch idle timers. A failed probe cannot advertise a ready session.
+        """
+        entry = self._entries.get(account_id)
+        connected = tab_closed = None
+        probe_failed = False
+        try:
+            probe = getattr(self._browser, "is_connected", None)
+            if callable(probe):
+                connected = bool(probe())
+            if entry is not None:
+                probe = getattr(entry.browser_manager.page, "is_closed", None)
+                if callable(probe):
+                    tab_closed = bool(probe())
+        except Exception:
+            probe_failed = True
+        if account_id in self._config_close_tasks or (entry is not None and entry.closing):
+            state = "closing"
+        elif self._closed:
+            state = "closed"
+        elif account_id in self._starting_accounts:
+            state = "starting"
+        elif probe_failed or connected is False or tab_closed is True:
+            state = "disconnected"
+        elif entry is None:
+            state = "cold"
+        else:
+            state = "busy" if entry.lock.locked() else "ready"
+        return {"state": state, "warm": entry is not None,
+                "browser_connected": connected, "tab_closed": tab_closed,
+                "idle_seconds": max(0.0, time.monotonic() - entry.last_used) if entry is not None else None,
+                "live_authentication_checked": False}
+
     def find_account_dict(self, account_id: str) -> dict:
         for raw in self.config_loader.get_accounts_config():
             if isinstance(raw, dict) and raw.get("account_id") == account_id:
@@ -578,76 +635,111 @@ class PlaywrightSessionPool:
         raise SessionError("unknown_account")
 
     async def acquire(self, account_id: str) -> SessionEntry:
+        generation = self._account_generations.get(account_id, 0)
         while True:
             if self._closed:
                 raise SessionError("pool_closed")
+            self._check_generation(account_id, generation)
+            committed_close = self._config_close_tasks.get(account_id)
+            if committed_close is not None:
+                await asyncio.shield(committed_close)
+                if self._config_close_tasks.get(account_id) is committed_close:
+                    self._config_close_tasks.pop(account_id, None)
+                continue
+            if not self.find_account_dict(account_id).get("is_active", True):
+                raise SessionError("inactive_account")
             entry = self._entries.get(account_id)
             if entry and entry.closing:
                 await entry.close_done.wait()
                 continue
             if entry:
                 entry.touch()
+                self._runtime_last_used = entry.last_used
                 return entry
             async with self._create_lock:
                 if self._closed:
                     raise SessionError("pool_closed")
+                self._check_generation(account_id, generation)
                 if account_id in self._entries:
                     continue
-                if len(self._entries) >= self.max_sessions:
-                    candidates = [(key, value) for key, value in self._entries.items()
-                                  if not value.lock.locked() and not value.closing]
-                    if not candidates:
-                        raise SessionError("session_limit")
-                    oldest = min(candidates, key=lambda item: item[1].last_used)[0]
-                    await self.close(oldest)
-                    if self._closed:
-                        raise SessionError("pool_closed")
-                start_task = asyncio.create_task(self._cold_start(account_id))
-                self._start_tasks.add(start_task)
-                try:
-                    # wait_for on Python 3.10 can swallow caller cancellation
-                    # when startup finishes in the same loop turn. wait keeps
-                    # cancellation distinct from task completion.
-                    done, _ = await asyncio.wait({start_task}, timeout=self.cold_start_timeout_seconds)
-                    if not done:
-                        start_task.cancel()
-                        try:
-                            abandoned = await start_task
-                        except (asyncio.CancelledError, Exception):
-                            pass
-                        else:
-                            await self._cleanup(abandoned.context, abandoned.owner_lock)
-                        raise SessionError("startup_timeout")
-                    entry = start_task.result()
-                except asyncio.CancelledError:
-                    # Cancellation can arrive after cold start succeeded but
-                    # before wait hands its entry back to this caller. The
-                    # completed entry is not yet tracked in _entries, so close
-                    # it explicitly rather than losing its context and owner.
-                    start_task.cancel()
+                return await self._start_account(account_id, generation)
+
+    def _check_generation(self, account_id, generation):
+        if self._account_generations.get(account_id, 0) != generation:
+            error = SessionError("session_expired")
+            error.operator_hint = "The account session was closed or updated while this request waited. Start a new request after the update finishes."
+            raise error
+
+    def _cancel_start(self, task):
+        # Concurrent account-close and caller-cancellation requests must not
+        # inject a second cancellation into the startup's shielded disposal.
+        if task not in self._cancelled_starts:
+            self._cancelled_starts.add(task)
+            task.cancel()
+
+    async def _start_account(self, account_id, generation):
+        start_task = asyncio.create_task(self._cold_start(account_id))
+        finished = asyncio.Event()
+        self._account_starts[account_id] = (start_task, finished)
+        self._start_tasks.add(start_task)
+        self._starting_accounts.add(account_id)
+        try:
+            try:
+                # wait_for on Python 3.10 can swallow caller cancellation
+                # when startup finishes in the same loop turn. wait keeps
+                # cancellation distinct from task completion.
+                done, _ = await asyncio.wait({start_task}, timeout=self.cold_start_timeout_seconds)
+                if not done:
+                    self._cancel_start(start_task)
                     try:
                         abandoned = await start_task
                     except (asyncio.CancelledError, Exception):
                         pass
                     else:
                         await self._cleanup(abandoned.context, abandoned.owner_lock)
-                    raise
-                except asyncio.TimeoutError:
-                    raise SessionError("startup_timeout") from None
-                finally:
-                    self._start_tasks.discard(start_task)
+                    raise SessionError("startup_timeout")
+                entry = start_task.result()
+            except asyncio.CancelledError:
+                # Cancellation can arrive after cold start succeeded but
+                # before wait hands its entry back to this caller. The
+                # completed entry is not yet tracked in _entries, so close
+                # it explicitly rather than losing its context and owner.
+                self._cancel_start(start_task)
+                try:
+                    abandoned = await start_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+                else:
+                    await self._cleanup(abandoned.context, abandoned.owner_lock)
+                raise
+            except asyncio.TimeoutError:
+                raise SessionError("startup_timeout") from None
+            if self._closed or self._account_generations.get(account_id, 0) != generation:
+                await self._cleanup(entry.context, entry.owner_lock)
                 if self._closed:
-                    await self._cleanup(entry.context, entry.owner_lock)
                     raise SessionError("pool_closed")
-                self._entries[account_id] = entry
-                self._ensure_reaper()
-                return entry
+                self._check_generation(account_id, generation)
+            self._entries[account_id] = entry
+            self._runtime_last_used = entry.last_used
+            self._ensure_reaper()
+            return entry
+        finally:
+            self._start_tasks.discard(start_task)
+            self._cancelled_starts.discard(start_task)
+            self._starting_accounts.discard(account_id)
+            self._account_starts.pop(account_id, None)
+            finished.set()
 
     @asynccontextmanager
     async def session(self, account_id: str):
+        generation = self._account_generations.get(account_id, 0)
         while True:
+            self._check_generation(account_id, generation)
             entry = await self.acquire(account_id)
             await entry.lock.acquire()
+            if self._account_generations.get(account_id, 0) != generation:
+                entry.lock.release()
+                self._check_generation(account_id, generation)
             if self._closed or entry.closing or self._entries.get(account_id) is not entry:
                 entry.lock.release()
                 continue
@@ -657,6 +749,7 @@ class PlaywrightSessionPool:
             yield entry.browser_manager
         finally:
             entry.touch()
+            self._runtime_last_used = entry.last_used
             entry.lock.release()
 
     def _check_session_transport(self, entry):
@@ -677,7 +770,13 @@ class PlaywrightSessionPool:
         error.operator_hint = hint
         raise error from None
 
-    async def close(self, account_id: str, *, wait: bool = True):
+    async def close(self, account_id: str, *, wait: bool = True, _invalidate: bool = True):
+        if _invalidate:
+            self._account_generations[account_id] = self._account_generations.get(account_id, 0) + 1
+        pending = self._account_starts.get(account_id)
+        if pending is not None:
+            self._cancel_start(pending[0])
+            await pending[1].wait()
         entry = self._entries.get(account_id)
         if not entry:
             return
@@ -688,7 +787,7 @@ class PlaywrightSessionPool:
                 entry.force_close.set()
             await entry.close_done.wait()
             if self._entries.get(account_id) is entry:
-                await self.close(account_id, wait=wait)
+                await self.close(account_id, wait=wait, _invalidate=False)
             return
         entry.closing = True
         entry.close_done.clear()
@@ -730,6 +829,32 @@ class PlaywrightSessionPool:
         task.add_done_callback(self._cleanup_tasks.discard)
         await asyncio.shield(task)
 
+    async def close_after_config_change(self, account_id: str):
+        """Retain a committed configuration change's close across cancellation.
+
+        Publish the generation and barrier before scheduling cleanup: neither
+        queued old requests nor new requests may receive the previous context.
+        Ordinary explicit close retains its existing cancellable-wait behavior.
+        """
+        self._account_generations[account_id] = self._account_generations.get(account_id, 0) + 1
+        task = self._config_close_tasks.get(account_id)
+        if task is None:
+            async def finish():
+                try:
+                    await self.close(account_id, _invalidate=False)
+                finally:
+                    if self._config_close_tasks.get(account_id) is asyncio.current_task():
+                        self._config_close_tasks.pop(account_id, None)
+            task = asyncio.create_task(finish())
+            self._config_close_tasks[account_id] = task
+            def completed(done):
+                # A cancelled tool caller no longer retrieves the result, but
+                # the pool still owns cleanup and must consume its exception.
+                if not done.cancelled():
+                    done.exception()
+            task.add_done_callback(completed)
+        await asyncio.shield(task)
+
     async def close_all(self):
         # Keep process handles and cleanup alive when the shutdown caller is
         # cancelled; cancellation is still delivered to that caller.
@@ -747,40 +872,70 @@ class PlaywrightSessionPool:
                 await reaper
         starts = tuple(self._start_tasks)
         for task in starts:
-            task.cancel()
+            self._cancel_start(task)
         if starts:
             await asyncio.gather(*starts, return_exceptions=True)
+        # Idle teardown also owns the creation lock. Drain it before taking
+        # that lock, never gather its waiter while holding the same lock.
+        if self._retire_task is not None:
+            await asyncio.shield(self._retire_task)
         async with self._create_lock:
             await self._refresh_owned_processes()
             for account in list(self._entries):
-                await self.close(account, wait=False)
+                await self.close(account, wait=False, _invalidate=False)
+            if self._config_close_tasks:
+                await asyncio.gather(*tuple(self._config_close_tasks.values()), return_exceptions=True)
             if self._cleanup_tasks:
                 await asyncio.gather(*tuple(self._cleanup_tasks), return_exceptions=True)
-            browser, runtime = self._browser, self._runtime
-            terminated = browser is None and runtime is None
-            if browser is not None:
-                try:
-                    await asyncio.wait_for(browser.close(), 10)
-                    terminated = True
-                except Exception:
-                    pass
-            if runtime is not None:
-                try:
-                    await asyncio.wait_for(runtime.stop(), 10)
-                    terminated = True
-                except Exception:
-                    pass
+            await self._close_runtime()
+
+    async def _close_runtime(self):
+        """The creation lock is held; prove drainage before discarding handles."""
+        await self._refresh_owned_processes()
+        browser, runtime = self._browser, self._runtime
+        terminated = browser is None and runtime is None
+        if browser is not None:
+            try:
+                await asyncio.wait_for(browser.close(), 10)
+                terminated = True
+            except Exception:
+                pass
+        if runtime is not None:
+            try:
+                await asyncio.wait_for(runtime.stop(), 10)
+                terminated = True
+            except Exception:
+                pass
+        if self._process_guard is not None:
+            terminated = await self._drain_owned_processes()
+        if terminated:
+            self._browser = self._runtime = None
+            self._capture_task = None
+            for owner in tuple(self._stranded_owners):
+                with suppress(OSError):
+                    owner.release()
+                self._stranded_owners.discard(owner)
             if self._process_guard is not None:
-                terminated = await self._drain_owned_processes()
-            if terminated:
-                self._browser = self._runtime = None
-                for owner in tuple(self._stranded_owners):
-                    with suppress(OSError):
-                        owner.release()
-                    self._stranded_owners.discard(owner)
-                if self._process_guard is not None:
-                    self._process_guard.close()
-                    self._process_guard = None
+                self._process_guard.close()
+                self._process_guard = None
+        else:
+            # A new launch must never overwrite unconfirmed process handles.
+            self._closed = True
+        return terminated
+
+    async def _retire_idle_runtime(self):
+        async def finish():
+            async with self._create_lock:
+                if (self._closed or self._entries or self._start_tasks
+                        or time.monotonic() - self._runtime_last_used < self.idle_timeout_seconds):
+                    return
+                await self._close_runtime()
+        # The lock belongs to this shielded task. Cancelling the reaper during
+        # shutdown must not let startup race a still-running runtime teardown.
+        if self._retire_task is None or self._retire_task.done():
+            self._retire_task = asyncio.create_task(finish())
+        task = self._retire_task
+        await asyncio.shield(task)
 
     async def _get_browser(self):
         if self._browser is not None:
@@ -821,6 +976,10 @@ class PlaywrightSessionPool:
             browser = await runtime.chromium.launch(**launch_options)
             self._runtime, self._browser = runtime, browser
             await self._capture_owned_processes(browser)
+            self._runtime_last_used = time.monotonic()
+            # Failed account authentication still leaves an idle runtime to
+            # reclaim; do not wait for the first successful SessionEntry.
+            self._ensure_reaper()
             return browser
         except asyncio.CancelledError:
             if runtime is not None:
@@ -848,6 +1007,17 @@ class PlaywrightSessionPool:
             owner = AccountOwnerLock(hashlib.sha256(identity.encode("utf-8")).hexdigest(), self._lock_directory)
             owner.acquire()
             proxy = resolve_account_proxy(self.config_loader, account)
+            # A rejected account must not evict another account's healthy
+            # context before its own credentials and route are validated.
+            if len(self._entries) >= self.max_sessions:
+                candidates = [(key, value) for key, value in self._entries.items()
+                              if not value.lock.locked() and not value.closing]
+                if not candidates:
+                    raise SessionError("session_limit")
+                oldest = min(candidates, key=lambda item: item[1].last_used)[0]
+                await self.close(oldest, _invalidate=False)
+                if self._closed:
+                    raise SessionError("pool_closed")
             browser = await self._get_browser()
             options = {"accept_downloads": False, "service_workers": "block"}
             if proxy:
@@ -1003,11 +1173,23 @@ class PlaywrightSessionPool:
                 if await asyncio.to_thread(guard.exited):
                     return True
                 await asyncio.to_thread(guard.terminate)
-                deadline = time.monotonic() + 3
+                # Abrupt driver death can leave Chromium finishing kernel
+                # teardown beyond three seconds even after Job termination.
+                # Match the other bounded close steps; preserve ownership if
+                # the pinned processes still have not exited at the deadline.
+                deadline = time.monotonic() + _PROCESS_DRAIN_TIMEOUT_SECONDS
+                next_refresh = time.monotonic() + 0.2
                 while time.monotonic() < deadline:
+                    if getattr(guard, "pending", None) and time.monotonic() >= next_refresh:
+                        # An unpinned transient child can disappear during
+                        # teardown. Refresh that evidence instead of retaining
+                        # stale uncertainty until a second close_all call.
+                        await asyncio.to_thread(guard.refresh)
+                        next_refresh = time.monotonic() + 0.2
                     if await asyncio.to_thread(guard.exited):
                         return True
                     await asyncio.sleep(0.02)
+                return await asyncio.to_thread(guard.exited)
             except Exception:
                 guard.complete = False
             return False
@@ -1019,6 +1201,8 @@ class PlaywrightSessionPool:
                     await asyncio.shield(self._capture_task)
             try:
                 await asyncio.wait_for(runtime.stop(), 10)
+                if self._process_guard is None and self._runtime is runtime:
+                    self._runtime = self._browser = None
             except Exception:
                 self._closed = True
                 self._runtime = runtime
@@ -1045,7 +1229,9 @@ class PlaywrightSessionPool:
                 now = time.monotonic()
                 for account, entry in list(self._entries.items()):
                     if not entry.lock.locked() and not entry.closing and now - entry.last_used > self.idle_timeout_seconds:
-                        await self.close(account)
+                        await self.close(account, _invalidate=False)
+                if not self._entries and not self._create_lock.locked():
+                    await self._retire_idle_runtime()
         except asyncio.CancelledError:
             pass
 

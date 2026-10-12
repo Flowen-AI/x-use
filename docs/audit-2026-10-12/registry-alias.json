@@ -1,0 +1,30 @@
+{
+  "result": "passed",
+  "installed_entrypoint": "xuse.cli:mcp",
+  "invocation_arguments": [],
+  "server": {
+    "name": "x-use",
+    "title": null,
+    "version": "3.0.0",
+    "websiteUrl": null,
+    "icons": null
+  },
+  "protocol": "2025-11-25",
+  "tools": 72,
+  "prompts": 7,
+  "resources": 2,
+  "accounts": 0,
+  "runtime_info_ok": true,
+  "isolated_private_home": true,
+  "browser_started": false,
+  "external_writes": 0,
+  "python": "3.13.15",
+  "resource_templates": 2,
+  "uvx_local_wheel_alias": {
+    "result": "passed",
+    "package_name": "x-use-mcp",
+    "tools": 72,
+    "protocol": "2025-11-25",
+    "external_writes": 0
+  }
+}

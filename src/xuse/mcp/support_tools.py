@@ -25,7 +25,65 @@ _SAFE_ACCOUNT_ID = re.compile(r"[A-Za-z0-9_-]+")
 
 
 def register_support_tools(server, ctx: Ctx) -> None:
-    """Register the five support tools on the FastMCP server."""
+    """Register local status, diagnostics and draft management tools."""
+
+    @server.tool(annotations=READ_ONLY_LOCAL)
+    @guard
+    async def get_runtime_info() -> Dict[str, Any]:
+        """Inspect server/package versions, tool count and configured execution
+        mode, backend workflow support and effective unlock allowance without
+        starting a browser. Contains no credentials, paths, account identities
+        or raw environment values. Configuration does not prove live X
+        authentication; use get_account_health and a bounded read for that.
+        """
+        import platform
+        from importlib.metadata import PackageNotFoundError, version
+        from xuse import __version__
+        from mcp.types import LATEST_PROTOCOL_VERSION
+
+        backend = getattr(ctx.session_pool, "backend", "selenium")
+        async_browser = backend in ("patchright", "playwright")
+        browser_configuration = None
+        if async_browser:
+            channel = ctx.config_loader.get_setting("mcp.browser_channel",
+                ctx.config_loader.get_setting("browser_settings.channel", None))
+            headless = ctx.config_loader.get_setting("mcp.browser_headless", True)
+            browser_configuration = {
+                "channel": channel if channel in ("chrome", "msedge", "chromium") else "driver_default" if channel is None else "invalid",
+                "headless": headless if isinstance(headless, bool) else None,
+                "persistent_profile": False,
+                "cookie_snapshots_saved": False,
+                "basis": "configured_options",
+            }
+        safety = ctx.safety_store if async_browser else None
+        execution_support = {
+            "basis": "configured_backend",
+            "async_browser_tools": async_browser,
+            "legacy_run_cycle": backend == "selenium",
+            "durable_browser_safety": safety is not None,
+            "resumable_thread_execution": async_browser and safety is not None,
+            "live_ui_verified": False,
+        }
+        unlock_policy = None if safety is None else {
+            "daily_cap": safety.caps["unlock"],
+            "development_override": safety.development_unlock_override,
+            "budget_timezone": "UTC",
+            "remaining_requires": "get_account_safety",
+        }
+        packages = {}
+        for name in ("mcp", backend):
+            try:
+                packages[name] = version(name)
+            except PackageNotFoundError:
+                packages[name] = None
+        return ok_(server_version=__version__, python_version=platform.python_version(),
+                   sdk_protocol_version=LATEST_PROTOCOL_VERSION, packages=packages,
+                   browser_backend=backend, draft_mode=ctx.draft_mode,
+                   auto_drain_enabled=ctx.queue_config.auto_drain.enabled,
+                   tool_count=len(await server.list_tools()),
+                   execution_support=execution_support, unlock_policy=unlock_policy,
+                   browser_configuration=browser_configuration,
+                   live_authentication_checked=False)
 
     @server.tool(annotations=READ_ONLY_LOCAL)
     @guard
@@ -107,7 +165,9 @@ def register_support_tools(server, ctx: Ctx) -> None:
     async def get_account_health(account: str) -> Dict[str, Any]:
         """Read-only health snapshot for one account: config presence,
         cookie-file validity, metrics counters, warm-session state, queue
-        depth, pending drafts. Never starts a browser. A config that fails
+        depth, pending drafts, and a transparent local readiness score out of
+        100. Unknown evidence earns no points; this does not predict X
+        enforcement or establish live authentication. Never starts a browser. A config that fails
         validation is REPORTED (config.valid=false with the error), not
         raised, surfacing that is the point of a health check."""
         raw = ctx.session_pool.find_account_dict(account)  # SessionError if unknown
@@ -118,19 +178,38 @@ def register_support_tools(server, ctx: Ctx) -> None:
         try:
             AccountConfig.model_validate(raw)
             config_info["valid"] = True
-        except Exception as e:
+        except Exception:
             config_info["valid"] = False
-            config_info["error"] = ex.sanitize_text(e)
+            # Validation errors may quote malformed inline cookie values.
+            config_info["error"] = "Account configuration failed validation. Check its field types."
         # Surface corrupt-on-disk config (the loader boots empty on parse
         # failure and records the reason on these attributes).
         for attr, key in (("accounts_error", "loader_error"),
                           ("settings_error", "settings_error")):
             loader_error = getattr(ctx.config_loader, attr, None)
             if loader_error:
-                config_info[key] = ex.sanitize_text(loader_error)
+                config_info[key] = "Configuration could not be parsed; inspect its field types locally."
         cookies_info: Dict[str, Any]
-        if raw.get("cookies"):
-            cookies_info = {"configured": True, "valid": True, "problems": []}
+        if getattr(ctx.session_pool, "backend", "selenium") in ("patchright", "playwright"):
+            from xuse.browser.cookies import load_account_cookies
+            from xuse.browser.errors import SessionError
+            source = ("inline" if raw.get("cookies") is not None else
+                      "file" if raw.get("cookie_file_path") else None)
+            cookies_info = {"configured": source is not None, "source": source,
+                            "valid": False, "problems": [],
+                            "validation": "async_cookie_import",
+                            "live_authentication_checked": False}
+            try:
+                # Use identical source precedence, relative paths and strict
+                # validation as startup. Never return cookie data or paths.
+                await asyncio.to_thread(load_account_cookies, raw, ctx.config_loader)
+            except SessionError as error:
+                cookies_info["problems"] = [error.reason]
+            else:
+                cookies_info["valid"] = True
+        elif raw.get("cookies"):
+            valid, problems = check_cookie_data(raw["cookies"])
+            cookies_info = {"configured": True, "valid": valid, "problems": problems}
         elif raw.get("cookie_file_path"):
             cookie_path = Path(raw["cookie_file_path"])
             if not cookie_path.is_absolute():
@@ -156,16 +235,97 @@ def register_support_tools(server, ctx: Ctx) -> None:
                 summary = await asyncio.to_thread(read_json, summary_path)
                 if not isinstance(summary, dict):
                     raise ValueError("Metrics must be an object.")
+                # Metrics summaries are not an event-log export. Preserve the
+                # public counters/timestamps, never arbitrary stored bodies.
+                from datetime import datetime
+                public_summary = {"account_id": account_id, "counters": {}}
+                known_counters = {"posts", "replies", "retweets", "quote_tweets", "likes", "errors",
+                                  "read", "post", "reply", "retweet", "like", "message", "messages",
+                                  "follow", "follows", "unlock", "bookmark", "bookmarks", "inbox"}
+                counters = summary.get("counters", {})
+                if isinstance(counters, dict):
+                    public_summary["counters"] = {key: value for key, value in counters.items()
+                        if key in known_counters and isinstance(value, int) and not isinstance(value, bool) and value >= 0}
+                for key in ("last_run_started_at", "last_run_finished_at"):
+                    value = summary.get(key)
+                    if value is None:
+                        public_summary[key] = None
+                    elif isinstance(value, str):
+                        try:
+                            public_summary[key] = datetime.fromisoformat(value.replace("Z", "+00:00")).isoformat()
+                        except ValueError:
+                            public_summary[key] = None
+                summary = public_summary
             except Exception:
                 summary = {"unreadable": True}
-        entry = ctx.session_pool.entry_for(account_id)
-        queue_counts = await asyncio.to_thread(ctx.queue_store.counts, account=account_id) if ctx.queue_store else {}
-        pending_drafts = len([d for d in ctx.draft_store.list(status="pending")
-                              if d.account == account_id])
+        from .browser_tools import session_metadata
+        from .health_scoring import score_account_health
+        try:
+            queue_counts = await asyncio.to_thread(ctx.queue_store.counts, account=account_id) if ctx.queue_store else {}
+        except Exception:
+            queue_counts = {"unavailable": True}
+        try:
+            pending_drafts = len([d for d in ctx.draft_store.list(status="pending")
+                                  if d.account == account_id])
+            drafts_info = {"pending": pending_drafts}
+        except Exception:
+            drafts_info = {"pending": None, "unavailable": True}
+        try:
+            session_info = session_metadata(ctx.session_pool, account_id)
+        except Exception:
+            session_info = {"warm": False, "state": "unknown", "browser_connected": None,
+                            "tab_closed": None, "idle_seconds": None,
+                            "live_authentication_checked": False}
+        backend = getattr(ctx.session_pool, "backend", "selenium")
+        proxy_info = {"configured": bool(raw.get("proxy") or ctx.config_loader.get_setting("browser_settings.proxy", None)),
+                      "valid": None, "connectivity_checked": False}
+        if backend in ("patchright", "playwright"):
+            from xuse.browser.sessions import resolve_account_proxy
+            try:
+                resolved = await asyncio.to_thread(resolve_account_proxy, ctx.config_loader, raw)
+            except Exception:
+                proxy_info["valid"] = False
+            else:
+                proxy_info.update(valid=True, configured=resolved is not None)
+                del resolved  # Never include proxy endpoints or credentials in diagnostics.
+        else:
+            from xuse.utils.proxy_manager import ProxyManager
+            from xuse.core.browser_manager.options import validate_legacy_proxy
+            try:
+                # Preview validates every pool candidate without selecting a
+                # route or advancing a round-robin cursor. The capability
+                # check matches browser startup and does not create options.
+                routes = ProxyManager(ctx.config_loader).preview_routes(raw.get("proxy"))
+                browser_type = str(ctx.config_loader.get_setting("browser_settings.type", "firefox")).lower()
+                driver_options = ctx.config_loader.get_setting("browser_settings.driver_options", [])
+                for route in routes or [None]:
+                    validate_legacy_proxy(route, browser_type, driver_options)
+                proxy_info.update(valid=True, configured=bool(routes))
+                del routes
+            except Exception:
+                proxy_info["valid"] = False
+        safety_info = None
+        policy_info = {}
+        import time
+        assessment_time = time.time()
+        if ctx.safety_store is not None:
+            try:
+                safety_info = await asyncio.to_thread(ctx.safety_store.status, account_id)
+                assessment_time = ctx.safety_store.clock()
+                policy_info = {name: getattr(ctx.safety_store, name, None)
+                               for name in ("read_interval", "write_interval", "per_minute")}
+            except Exception:
+                # Ledger failures are unknown evidence, never a healthy zero.
+                safety_info = None
+        health = score_account_health(config=config_info, cookies=cookies_info,
+            proxy=proxy_info, session=session_info, safety=safety_info,
+            queue=queue_counts if ctx.queue_store is not None else {"unavailable": True},
+            now=assessment_time, policy=policy_info)
         return ok_(account=account_id,
                    config=config_info,
                    cookies=cookies_info,
                    metrics=summary or {"counters": {}},
-                   session={"warm": entry is not None},
+                   session=session_info,
                    queue=queue_counts,
-                   drafts={"pending": pending_drafts})
+                   drafts=drafts_info,
+                   proxy=proxy_info, health=health)

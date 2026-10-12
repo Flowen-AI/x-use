@@ -312,7 +312,10 @@ not authorize publication, messages or follows.
 
 Requested inbox checks use get_inbox with folder=inbox, requests or other and
 inbox_filter=all, unread or read. Results are bounded and unknown unread state
-stays unknown; reads never accept requests. Opening chats or visiting
+stays unknown; reads never accept requests. get_conversation_controls inspects
+supported controls; manage_conversation prepares an authorized request acceptance,
+mute/unmute or deletion for review through get_draft and approve_draft.
+Opening chats or visiting
 notifications may mark items read. For pin_required, use
 `unlock_inbox(account=..., pin_env_var="XUSE_INBOX_PIN")` only after the owner sets
 that server variable; never request the PIN in chat or store it in drafts.

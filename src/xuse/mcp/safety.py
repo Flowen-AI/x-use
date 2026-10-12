@@ -7,6 +7,7 @@ operator reconciles its outcome. These are local limits, not X guarantees.
 import math
 import hashlib
 import os
+import re
 import sqlite3
 import tempfile
 import time
@@ -31,9 +32,10 @@ class SafetyStore:
     # Unknown future operations remain denied until explicitly reviewed here.
     PIN_SAFE_READS = frozenset({"get_profile", "get_profile_context", "get_profile_posts",
         "get_profile_connections", "get_tweet", "get_thread", "search_tweets", "search_profile",
-        "get_home_feed", "get_notifications", "get_account_analytics"})
+        "get_home_feed", "get_notifications", "get_account_analytics", "get_bookmarks"})
     DEFAULT_CAPS = {"read": 300, "post": 5, "reply": 15, "like": 30,
-                    "retweet": 10, "message": 10, "follow": 10, "unlock": 5}
+                    "retweet": 10, "message": 10, "follow": 10, "unlock": 5,
+                    "bookmark": 30, "inbox": 20}
 
     def __init__(self, path, settings=None, *, clock=time.time):
         self.path = Path(path)
@@ -45,6 +47,19 @@ class SafetyStore:
             if kind not in self.caps or isinstance(value, bool) or not isinstance(value, int) or value < 0:
                 raise ValueError("Safety daily caps must be nonnegative integers for known actions.")
             self.caps[kind] = value
+        # Opt-in for a development server process only. Keep the durable ledger,
+        # pauses and pacing shared with normal runs; never reset attempts.
+        self.development_unlock_override = None
+        override = os.environ.get("XUSE_DEV_UNLOCK_DAILY_CAP")
+        if override is not None:
+            if os.environ.get("XUSE_ENV") != "development":
+                raise ValueError("XUSE_DEV_UNLOCK_DAILY_CAP requires XUSE_ENV=development.")
+            if not re.fullmatch(r"[0-9]{1,2}", override) or not 1 <= int(override) <= 50:
+                raise ValueError("Development unlock daily cap must be an integer from 1 to 50.")
+            if self.caps["unlock"] == 0:
+                raise ValueError("Development override cannot enable explicitly disabled inbox unlocking.")
+            self.development_unlock_override = int(override)
+            self.caps["unlock"] = self.development_unlock_override
         self.read_interval = self._interval(cfg.get("read_interval_seconds", 2))
         self.write_interval = self._interval(cfg.get("write_interval_seconds", 90))
         self.per_minute = cfg.get("max_actions_per_minute", 6)
@@ -99,12 +114,18 @@ class SafetyStore:
                         account TEXT PRIMARY KEY, token TEXT NOT NULL);
                     CREATE TABLE IF NOT EXISTS action_refs (
                         action_id TEXT PRIMARY KEY, account TEXT NOT NULL,
-                        draft_id TEXT, campaign_id TEXT, lead_id TEXT);
+                        draft_id TEXT, campaign_id TEXT, lead_id TEXT, queue_id TEXT);
                 """)
-                self._ready = True
             connection.execute("BEGIN IMMEDIATE")
+            if not self._ready:
+                # Additive migration for pre-3.1 ledgers, serialized with
+                # reservations so two initializing processes cannot race it.
+                columns = {row["name"] for row in connection.execute("PRAGMA table_info(action_refs)")}
+                if "queue_id" not in columns:
+                    connection.execute("ALTER TABLE action_refs ADD COLUMN queue_id TEXT")
             yield connection
             connection.commit()
+            self._ready = True
         except BaseException:
             connection.rollback()
             raise
@@ -142,8 +163,8 @@ class SafetyStore:
             action_id = uuid4().hex
             db.execute("INSERT INTO actions VALUES(?,?,?,?,?,'started',NULL)", (action_id, account, kind, action_key, now))
             if context:
-                db.execute("INSERT INTO action_refs VALUES(?,?,?,?,?)", (action_id, account,
-                           context.get("draft_id"), context.get("campaign_id"), context.get("lead_id")))
+                db.execute("INSERT INTO action_refs(action_id,account,draft_id,campaign_id,lead_id,queue_id) VALUES(?,?,?,?,?,?)", (action_id, account,
+                           context.get("draft_id"), context.get("campaign_id"), context.get("lead_id"), context.get("queue_id")))
         return action_id
 
     def finish(self, account, action_id, status):
@@ -204,9 +225,12 @@ class SafetyStore:
             pause = db.execute("SELECT reason,paused FROM pauses WHERE account=?", (account,)).fetchone()
             counts = {row["kind"]: row["used"] for row in db.execute("SELECT kind,count(*) AS used FROM actions WHERE account=? AND started>=? GROUP BY kind", (account, now - now % 86400))}
             uncertain = [dict(row) for row in db.execute("SELECT action_id,kind,started,status FROM actions WHERE account=? AND status IN ('started','uncertain') ORDER BY started DESC LIMIT 50", (account,))]
-            recent = [dict(row) for row in db.execute("SELECT a.action_id,a.kind,a.started,a.status,r.draft_id,r.campaign_id,r.lead_id FROM actions a LEFT JOIN action_refs r ON a.action_id=r.action_id WHERE a.account=? ORDER BY a.started DESC LIMIT 50", (account,))]
+            recent = [dict(row) for row in db.execute("SELECT a.action_id,a.kind,a.started,a.status,r.draft_id,r.campaign_id,r.lead_id,r.queue_id FROM actions a LEFT JOIN action_refs r ON a.action_id=r.action_id WHERE a.account=? ORDER BY a.started DESC LIMIT 50", (account,))]
         return {"paused": bool(pause), "pause": dict(pause) if pause else None,
-                "daily_used": counts, "daily_caps": self.caps, "budget_timezone": "UTC",
+                "daily_used": counts, "daily_caps": dict(self.caps), "budget_timezone": "UTC",
+                "daily_remaining": {kind: max(0, cap - counts.get(kind, 0)) for kind, cap in self.caps.items()},
+                "daily_reset_at": int(now - now % 86400 + 86400),
+                "development_unlock_override": self.development_unlock_override,
                 "uncertain_actions": uncertain, "recent_actions": recent}
 
     def reconcile(self, account, action_id, outcome):
@@ -224,7 +248,13 @@ class SafetyStore:
 
     def reference(self, account, action_id):
         with self._db() as db:
-            row = db.execute("SELECT a.status,r.draft_id,r.campaign_id,r.lead_id FROM actions a LEFT JOIN action_refs r ON a.action_id=r.action_id WHERE a.account=? AND a.action_id=?", (account, action_id)).fetchone()
+            row = db.execute("SELECT a.status,r.draft_id,r.campaign_id,r.lead_id,r.queue_id FROM actions a LEFT JOIN action_refs r ON a.action_id=r.action_id WHERE a.account=? AND a.action_id=?", (account, action_id)).fetchone()
+        return dict(row) if row else None
+
+    def latest_queue_action(self, account, queue_id):
+        """Return the last reservation for this account's queued action."""
+        with self._db() as db:
+            row = db.execute("SELECT a.action_id,a.status FROM actions a JOIN action_refs r ON a.action_id=r.action_id WHERE a.account=? AND r.account=? AND r.queue_id=? ORDER BY a.rowid DESC LIMIT 1", (account, account, queue_id)).fetchone()
         return dict(row) if row else None
 
     def latest_draft_action(self, account, draft_id):

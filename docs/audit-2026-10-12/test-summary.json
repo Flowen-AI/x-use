@@ -1,0 +1,29 @@
+{
+  "note": "Partitions overlap; do not sum as unique tests. Platform skips documented in the audit.",
+  "suites": [
+    {
+      "suite": "audit-20261012-source.xml",
+      "tests": 1554,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "seconds": 276.964
+    },
+    {
+      "suite": "audit-20261012-wheel-native.xml",
+      "tests": 725,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "seconds": 667.922
+    },
+    {
+      "suite": "audit-20261012-final-metadata.xml",
+      "tests": 59,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "seconds": 4.586
+    }
+  ]
+}

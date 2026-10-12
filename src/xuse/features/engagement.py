@@ -16,14 +16,14 @@ try:
     from ..core.config_loader import ConfigLoader
     from ..utils.logger import setup_logger
     from ..data_models import ScrapedTweet, AccountConfig
-    from .scraper.parsing import find_article_with_status_id
+    from .scraper.parsing import find_article_with_status_id, extract_status_id
 except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..')) # Add root src to path
     from xuse.core.browser_manager import BrowserManager
     from xuse.core.config_loader import ConfigLoader
     from xuse.utils.logger import setup_logger
     from xuse.models import ScrapedTweet, AccountConfig
-    from xuse.features.scraper.parsing import find_article_with_status_id
+    from xuse.features.scraper.parsing import find_article_with_status_id, extract_status_id
 
 config_loader_instance = ConfigLoader()
 setup_logger(config_loader_instance)
@@ -67,7 +67,7 @@ class TweetEngagement:
             # If a tweet URL is provided, navigate to it first.
             if tweet_url:
                 original_url = self.driver.current_url
-                if not tweet_id in original_url: # Only navigate if not already on a page related to the tweet
+                if extract_status_id(original_url) != str(tweet_id):
                     logger.info(f"Navigating to tweet URL: {tweet_url}")
                     if not self.browser_manager.navigate_to(tweet_url):
                         # Liking from whatever page happens to be loaded could

@@ -10,6 +10,7 @@ import created a genuinely new one.
 import json
 
 import pytest
+from xuse.browser.cookies import normalize_cookies
 
 from helpers import (  # noqa: F401 — imported fixtures register for this module
     accounts,
@@ -36,9 +37,11 @@ FRESH = [
 
 
 @pytest.fixture
-def config_dir(tmp_path, monkeypatch):
+def config_dir(tmp_path, monkeypatch, config_loader):
     d = tmp_path / "config"
     d.mkdir()
+    (d / "accounts.json").write_text(config_loader.accounts_file.read_text(encoding="utf-8"), encoding="utf-8")
+    config_loader.accounts_file = d / "accounts.json"
     monkeypatch.setattr("xuse.mcp.accounts_tools.CONFIG_DIR", d)
     return d
 
@@ -79,7 +82,7 @@ async def test_successful_update_replaces_cookies_and_leaves_no_backup(
     })
 
     assert result["ok"] is True
-    assert json.loads(live.read_text(encoding="utf-8")) == FRESH
+    assert json.loads(live.read_text(encoding="utf-8")) == normalize_cookies(FRESH)
     leftovers = [p.name for p in config_dir.glob(".acc1_cookies-*")]
     assert not leftovers, f"pre-import backups accumulated in config/: {leftovers}"
 

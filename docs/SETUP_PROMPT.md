@@ -2,7 +2,8 @@
 
 Paste the prompt below into Claude Code, Claude Desktop, or Codex. The agent
 installs x-use, registers the MCP server, verifies it, and interviews you to
-configure your account. You never edit a config file by hand.
+configure your account where the client grants access. Some clients require
+manual registration or a reload before the new tools are available.
 
 Everything below the line is the prompt, copy it verbatim.
 

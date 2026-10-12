@@ -156,9 +156,9 @@ async def scrape_single_tweet(ctx: Ctx, account_id: str, tweet_url: str, tweet_i
             scraper = await asyncio.to_thread(TweetScraper, browser_manager, account_id)
             tweets = await asyncio.to_thread(scraper.scrape_tweets_from_url, tweet_url, "tweet", 1)
     for tweet in tweets:
-        if tweet.tweet_id == tweet_id and tweet.text_content:
+        if tweet.tweet_id == tweet_id and (tweet.text_content or getattr(tweet, "media", None)):
             return tweet
-    if not uses_playwright(ctx) and tweets and tweets[0].text_content:
+    if not uses_playwright(ctx) and tweets and (tweets[0].text_content or getattr(tweets[0], "media", None)):
         return tweets[0]
     raise ToolError(
         f"Could not load the content of tweet {tweet_id} for auto-reply. "
@@ -296,10 +296,10 @@ def register_tools(server, ctx: Ctx) -> None:
             tweet_url=tweet_url,
             author=f"@{handle}" if handle else None,
             text_content=original.text_content or "",
-            like_count=original.like_count or 0,
-            retweet_count=original.retweet_count or 0,
-            reply_count=original.reply_count or 0,
-            view_count=original.view_count or 0,
+            like_count=original.like_count,
+            retweet_count=original.retweet_count,
+            reply_count=original.reply_count,
+            view_count=original.view_count,
             media=media_envelope(original),
             persona=getattr(model, "persona", None),
         )
@@ -310,7 +310,7 @@ def register_tools(server, ctx: Ctx) -> None:
             images = await asyncio.to_thread(images_for_tweet, original)
         return with_images(envelope, images)
 
-    @server.tool(annotations=PUBLISHES_TO_X)
+    @server.tool(annotations=PUBLISHES_TO_X.model_copy(update={"destructiveHint": True}))
     @guard
     async def approve_draft(draft_id: str) -> Dict[str, Any]:
         """Execute a pending draft created by a write tool. Runs the exact
@@ -346,7 +346,6 @@ def register_tools(server, ctx: Ctx) -> None:
             # exact action already executed (e.g. the server died after the
             # write landed but before the "executed" append) — the draft IS
             # executed, so don't mislabel it "failed".
-            message = str(e)
             action_id = getattr(e, "action_id", None)
             if draft.action == "publish_thread":
                 # The journal, not a generic dedup message, is authoritative for
@@ -360,7 +359,7 @@ def register_tools(server, ctx: Ctx) -> None:
                 except Exception:
                     status = "uncertain"
                 record_outcome(status, original_error=e)
-            elif isinstance(e, ToolError) and ("dedup" in message or "Already" in message):
+            elif isinstance(e, ToolError) and e.reason == "already_executed":
                 record_outcome("executed", original_error=e)
             elif uses_playwright(ctx) and action_id:
                 record = ctx.safety_store.reference(draft.account, action_id) if ctx.safety_store else None
@@ -400,6 +399,7 @@ def register_tools(server, ctx: Ctx) -> None:
     from .thread_tools import register_thread_tools
     from .analytics_tools import register_analytics_tools
     from .notifications_tools import register_notifications_tools
+    from .control_tools import register_control_tools
 
     register_write_tools(server, ctx)
     register_engage_tool(server, ctx)
@@ -415,6 +415,7 @@ def register_tools(server, ctx: Ctx) -> None:
     register_thread_tools(server, ctx)
     register_analytics_tools(server, ctx)
     register_notifications_tools(server, ctx)
+    register_control_tools(server, ctx)
     # Non-tool surfaces: workflow prompts and read-only context resources.
     register_prompts(server, ctx)
     register_resources(server, ctx)

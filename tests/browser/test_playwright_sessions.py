@@ -313,11 +313,13 @@ def test_owner_lock_is_enforced_across_processes_and_released(tmp_path):
     )
     lock.acquire()
     try:
-        result = subprocess.run([sys.executable, "-c", program, key, str(tmp_path)], capture_output=True, timeout=10)
+        # This includes a fresh interpreter and package import on loaded CI
+        # hosts; the return code, not cold-start speed, proves exclusion.
+        result = subprocess.run([sys.executable, "-c", program, key, str(tmp_path)], capture_output=True, timeout=90)
         assert result.returncode == 23
     finally:
         lock.release()
-    result = subprocess.run([sys.executable, "-c", program, key, str(tmp_path)], capture_output=True, timeout=10)
+    result = subprocess.run([sys.executable, "-c", program, key, str(tmp_path)], capture_output=True, timeout=90)
     assert result.returncode == 0
 
 

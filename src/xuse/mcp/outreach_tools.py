@@ -31,6 +31,23 @@ def _account(ctx: Ctx, account: str) -> str:
 def register_outreach_tools(server, ctx: Ctx) -> None:
     """Register account-scoped local records and bounded reviewed drafts."""
 
+    @server.tool(annotations=READ_ONLY_LOCAL)
+    @guard
+    async def preview_campaign_message(account: str, campaign_id: str,
+                                       lead_id: str) -> Dict[str, Any]:
+        """Preview one campaign member's exact personalized message and local
+        eligibility without creating drafts, reserving a lead, or sending.
+        Includes pause, opt-out and prior-reservation reasons. Eligibility is
+        a snapshot; preparation and approval recheck it. No browser or LLM.
+        """
+        account_id, raw, _ = ex.resolve_account(ctx, account)
+        preview = _call(_store(ctx).preview_campaign_message, account_id, campaign_id,
+                        lead_id, ctx.draft_store)
+        if not raw.get("is_active", True):
+            preview["eligible"] = False
+            preview["reasons"].append("account_inactive")
+        return ok_(account=account_id, **preview)
+
     @server.tool(annotations=LOCAL_WRITE_IDEMPOTENT)
     @guard
     async def upsert_lead(account: str, handle: str, display_name: Optional[str] = None,

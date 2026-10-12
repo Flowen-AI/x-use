@@ -1,0 +1,35 @@
+{
+  "status": "passed",
+  "mode": "package",
+  "os": "Windows",
+  "architecture": "AMD64",
+  "python": "3.14.7",
+  "package": {
+    "version": "3.0.0",
+    "skill_count": 7,
+    "cli_help": "passed",
+    "driver": "patchright",
+    "driver_version": "1.63.0"
+  },
+  "init": {
+    "settings_created": true,
+    "inactive_account": true,
+    "config_loader": "passed",
+    "private_config": "passed",
+    "existing_config_preserved": true,
+    "client_home_isolated": true,
+    "browser_started": false
+  },
+  "mcp": {
+    "server": "x-use",
+    "tool_count": 72,
+    "prompt_count": 7,
+    "browser_started": false,
+    "entrypoints": [
+      "module",
+      "cli",
+      "registry"
+    ],
+    "invalid_protocol_messages": 0
+  }
+}

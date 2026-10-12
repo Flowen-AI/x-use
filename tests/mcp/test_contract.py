@@ -31,6 +31,9 @@ from helpers import (  # noqa: F401 — imported fixtures register for this modu
 
 # Every documented tool and the parameter names each must accept.
 EXPECTED_TOOLS: Dict[str, Dict[str, Any]] = {
+    "get_runtime_info": {"params": set(), "required": set()},
+    "preview_campaign_message": {"params": {"account", "campaign_id", "lead_id"},
+                                 "required": {"account", "campaign_id", "lead_id"}},
     "get_thread": {"params": {"tweet_url", "account", "limit", "include_images"}, "required": {"tweet_url"}},
     "prepare_thread": {"params": {"account", "posts", "reply_to"}, "required": {"account", "posts"}},
     "get_thread_run": {"params": {"run_id"}, "required": {"run_id"}},
@@ -84,6 +87,16 @@ EXPECTED_TOOLS: Dict[str, Dict[str, Any]] = {
     "search_conversations": {"params": {"account", "query", "limit", "inbox_filter", "unread_first", "folder"}, "required": {"account", "query"}},
     "send_message": {"params": {"account", "recipient", "text"}, "required": {"account", "recipient", "text"}},
     "follow_profile": {"params": {"account", "profile"}, "required": {"account", "profile"}},
+    "get_bookmarks": {"params": {"account", "limit"}, "required": {"account"}},
+    "bookmark_tweet": {"params": {"account", "tweet_url"}, "required": {"account", "tweet_url"}},
+    "remove_bookmark": {"params": {"account", "tweet_url"}, "required": {"account", "tweet_url"}},
+    "unlike_tweet": {"params": {"account", "tweet_url"}, "required": {"account", "tweet_url"}},
+    "undo_retweet": {"params": {"account", "tweet_url"}, "required": {"account", "tweet_url"}},
+    "unfollow_profile": {"params": {"account", "profile"}, "required": {"account", "profile"}},
+    "edit_tweet": {"params": {"account", "tweet_url", "expected_text", "text"}, "required": {"account", "tweet_url", "expected_text", "text"}},
+    "delete_tweet": {"params": {"account", "tweet_url", "expected_text"}, "required": {"account", "tweet_url", "expected_text"}},
+    "get_conversation_controls": {"params": {"account", "conversation_id"}, "required": {"account", "conversation_id"}},
+    "manage_conversation": {"params": {"account", "conversation_id", "operation"}, "required": {"account", "conversation_id", "operation"}},
     "get_profile": {"params": {"account", "profile"}, "required": {"account", "profile"}},
     "get_profile_context": {"params": {"account", "profile", "post_limit"}, "required": {"account", "profile"}},
     "get_profile_posts": {"params": {"account", "profile", "feed", "limit"}, "required": {"account", "profile"}},

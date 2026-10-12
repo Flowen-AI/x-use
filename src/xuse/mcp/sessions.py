@@ -68,6 +68,10 @@ class SessionPool:
         self._browser_factory = browser_factory
         self._entries: Dict[str, SessionEntry] = {}
         self._closing: Dict[str, asyncio.Event] = {}
+        self._force_closing: Dict[str, asyncio.Event] = {}
+        self._account_generations: Dict[str, int] = {}
+        self._config_close_tasks: Dict[str, asyncio.Task] = {}
+        self._start_finished: Dict[str, asyncio.Event] = {}
         self._create_lock: Optional[asyncio.Lock] = None
         self._reaper_task: Optional[asyncio.Task] = None
         # Strong references to fire-and-forget cleanup tasks (orphaned-browser
@@ -93,13 +97,22 @@ class SessionPool:
 
     async def acquire(self, account_id: str) -> SessionEntry:
         """Return the warm session for ``account_id``, creating it lazily."""
+        generation = self._account_generations.get(account_id, 0)
         if self._closed:
             raise SessionError("Session pool is closed.")
         self._ensure_reaper()
-        while account_id in self._closing:
-            await self._closing[account_id].wait()
+        while account_id in self._closing or account_id in self._config_close_tasks:
+            committed_close = self._config_close_tasks.get(account_id)
+            if committed_close is not None:
+                await asyncio.shield(committed_close)
+                if self._config_close_tasks.get(account_id) is committed_close:
+                    self._config_close_tasks.pop(account_id, None)
+            else:
+                await self._closing[account_id].wait()
             if self._closed:
                 raise SessionError("Session pool is closed.")
+            self._check_generation(account_id, generation)
+        self._check_generation(account_id, generation)
         entry = self._entries.get(account_id)
         if entry is not None:
             entry.touch()
@@ -109,16 +122,28 @@ class SessionPool:
         async with self._create_lock:  # serialize cold starts per pool
             if self._closed:
                 raise SessionError("Session pool is closed.")
+            self._check_generation(account_id, generation)
             entry = self._entries.get(account_id)
             if entry is not None:
                 entry.touch()
                 return entry
-            entry = await self._cold_start(account_id)
-            if self._closed:
-                await asyncio.to_thread(self._close_driver_quietly, entry.browser_manager)
-                raise SessionError("Session pool is closed.")
-            self._entries[account_id] = entry
-            return entry
+            finished = self._start_finished[account_id] = asyncio.Event()
+            try:
+                entry = await self._cold_start(account_id)
+                if self._closed or self._account_generations.get(account_id, 0) != generation:
+                    await asyncio.to_thread(self._close_driver_quietly, entry.browser_manager)
+                    if self._closed:
+                        raise SessionError("Session pool is closed.")
+                    self._check_generation(account_id, generation)
+                self._entries[account_id] = entry
+                return entry
+            finally:
+                self._start_finished.pop(account_id, None)
+                finished.set()
+
+    def _check_generation(self, account_id, generation):
+        if self._account_generations.get(account_id, 0) != generation:
+            raise SessionError("The account configuration changed while this request waited. Start a new request after the update finishes.")
 
     @asynccontextmanager
     async def session(self, account_id: str):
@@ -127,9 +152,14 @@ class SessionPool:
         Serializes tool calls that share one browser; refreshes the idle
         timestamp on release so active sessions are never reaped.
         """
+        generation = self._account_generations.get(account_id, 0)
         while True:
+            self._check_generation(account_id, generation)
             entry = await self.acquire(account_id)
             await entry.lock.acquire()
+            if self._account_generations.get(account_id, 0) != generation:
+                entry.lock.release()
+                self._check_generation(account_id, generation)
             # A close may start after acquire returned but before this waiter
             # obtains the action lock. Never hand out that dying browser.
             if self._entries.get(account_id) is entry and account_id not in self._closing:
@@ -144,17 +174,24 @@ class SessionPool:
     async def close(self, account_id: str, *, wait: bool = True) -> None:
         closing = self._closing.get(account_id)
         if closing is not None:
+            if not wait:
+                self._force_closing[account_id].set()
             await closing.wait()
             return
         entry = self._entries.get(account_id)
         if entry is None:
             return
         closing = self._closing[account_id] = asyncio.Event()
+        force_close = self._force_closing[account_id] = asyncio.Event()
         locked = False
+        lock_waiter = force_waiter = None
         try:
             if wait:
-                await entry.lock.acquire()
-                locked = True
+                lock_waiter = asyncio.create_task(entry.lock.acquire())
+                force_waiter = asyncio.create_task(force_close.wait())
+                await asyncio.wait((lock_waiter, force_waiter), return_when=asyncio.FIRST_COMPLETED)
+                if lock_waiter.done() and not lock_waiter.cancelled():
+                    locked = lock_waiter.result()
             cleanup = asyncio.create_task(asyncio.to_thread(entry.browser_manager.close_driver))
             try:
                 await asyncio.shield(cleanup)
@@ -169,10 +206,40 @@ class SessionPool:
         except Exception:
             logger.exception("Error closing browser session for '%s'.", account_id)
         finally:
+            # Cancellation can land after the lock waiter acquired the lock
+            # but before the close coroutine resumed to record ownership.
+            if lock_waiter is not None and lock_waiter.done() and not lock_waiter.cancelled():
+                locked = lock_waiter.result()
+            for waiter in (lock_waiter, force_waiter):
+                if waiter is not None and not waiter.done():
+                    waiter.cancel()
             if locked:
                 entry.lock.release()
             self._closing.pop(account_id, None)
+            self._force_closing.pop(account_id, None)
             closing.set()
+
+    async def close_after_config_change(self, account_id: str) -> None:
+        """Retain post-commit cleanup and block reuse if its caller cancels."""
+        self._account_generations[account_id] = self._account_generations.get(account_id, 0) + 1
+        task = self._config_close_tasks.get(account_id)
+        if task is None:
+            async def finish():
+                try:
+                    pending = self._start_finished.get(account_id)
+                    if pending is not None:
+                        await pending.wait()
+                    await self.close(account_id)
+                finally:
+                    if self._config_close_tasks.get(account_id) is asyncio.current_task():
+                        self._config_close_tasks.pop(account_id, None)
+            task = asyncio.create_task(finish())
+            self._config_close_tasks[account_id] = task
+            def completed(done):
+                if not done.cancelled():
+                    done.exception()
+            task.add_done_callback(completed)
+        await asyncio.shield(task)
 
     async def close_all(self) -> None:
         """Close every session and stop the reaper. Safe to call once at shutdown."""
@@ -187,6 +254,9 @@ class SessionPool:
                 await task
         for account_id in list(self._entries.keys()):
             await self.close(account_id, wait=False)
+        if self._config_close_tasks:
+            await asyncio.shield(asyncio.gather(
+                *tuple(self._config_close_tasks.values()), return_exceptions=True))
 
     # -- internals ----------------------------------------------------------
 

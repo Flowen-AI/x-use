@@ -194,6 +194,10 @@ AGENTS.md
 CLAUDE.md
 .claude/
 docs/superpowers/
+# Maintainer discovery notes are local only, not public documentation.
+docs/SEO_AEO_AUDIT.md
+docs/LAUNCH_PLAN.md
+docs/github-about.json
 
 # Runtime state (drafts, queue, per-account metrics) — local only
 data/drafts.jsonl

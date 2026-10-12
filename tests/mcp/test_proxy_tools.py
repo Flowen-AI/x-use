@@ -86,10 +86,14 @@ async def test_test_proxy_uses_explicit_url_and_masks(mcp_server, monkeypatch):
     calls = {}
 
     class FakeBM:
-        def __init__(self, account_config=None):
-            calls["proxy"] = account_config.get("proxy")
+        driver = None
 
-        def get_driver(self):
+        def __init__(self, account_config=None, config_loader=None):
+            calls["proxy"] = account_config.get("proxy")
+            calls["loader"] = config_loader
+
+        def get_driver(self, *, authenticate=True):
+            calls["authenticate"] = authenticate
             class D:
                 def set_page_load_timeout(self, seconds): pass
                 def get(self, url): calls["url"] = url
@@ -97,7 +101,9 @@ async def test_test_proxy_uses_explicit_url_and_masks(mcp_server, monkeypatch):
                 def page_source(self): return '{"ip":"203.0.113.7"}'
             return D()
 
-        def close_driver(self): calls["closed"] = True
+        def close_driver(self, *, strict=False):
+            calls["closed"] = True
+            calls["strict"] = strict
 
     monkeypatch.setattr(proxy_mod, "BrowserManager", FakeBM)
     result = await call_tool(mcp_server, "test_proxy",
@@ -106,6 +112,9 @@ async def test_test_proxy_uses_explicit_url_and_masks(mcp_server, monkeypatch):
     assert result["egress_ip"] == "203.0.113.7"
     assert result["proxy"] == "http://***@8.8.8.8:8000"
     assert calls["closed"] is True
+    assert calls["strict"] is True
+    assert calls["loader"] is mcp_server.xuse_ctx.config_loader
+    assert calls["authenticate"] is False
 
 
 @pytest.mark.asyncio
@@ -113,10 +122,12 @@ async def test_test_proxy_resolves_account_pool(mcp_server, monkeypatch):
     seen = {}
 
     class FakeBM:
-        def __init__(self, account_config=None):
+        driver = None
+
+        def __init__(self, account_config=None, config_loader=None):
             seen["proxy"] = account_config.get("proxy")
 
-        def get_driver(self):
+        def get_driver(self, *, authenticate=True):
             class D:
                 def set_page_load_timeout(self, seconds): pass
                 def get(self, url): pass
@@ -124,7 +135,7 @@ async def test_test_proxy_resolves_account_pool(mcp_server, monkeypatch):
                 def page_source(self): return '{"ip":"198.51.100.3"}'
             return D()
 
-        def close_driver(self): pass
+        def close_driver(self, *, strict=False): pass
 
     monkeypatch.setattr(proxy_mod, "BrowserManager", FakeBM)
     result = await call_tool(mcp_server, "test_proxy", {"account": "acc1"})
@@ -145,9 +156,11 @@ async def test_test_proxy_fails_when_no_egress_ip(mcp_server, monkeypatch):
     source. That must be a probe failure, not ok:true with null IP (live
     finding, v2.3)."""
     class FakeBM:
-        def __init__(self, account_config=None): pass
+        driver = None
 
-        def get_driver(self):
+        def __init__(self, account_config=None, config_loader=None): pass
+
+        def get_driver(self, *, authenticate=True):
             class D:
                 def set_page_load_timeout(self, seconds): pass
                 def get(self, url): pass
@@ -156,7 +169,7 @@ async def test_test_proxy_fails_when_no_egress_ip(mcp_server, monkeypatch):
                     return "<html><body>ERR_PROXY_CONNECTION_FAILED</body></html>"
             return D()
 
-        def close_driver(self): pass
+        def close_driver(self, *, strict=False): pass
 
     monkeypatch.setattr(proxy_mod, "BrowserManager", FakeBM)
     result = await call_tool(mcp_server, "test_proxy",

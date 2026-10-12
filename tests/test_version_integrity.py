@@ -51,6 +51,13 @@ def test_plugin_manifest_matches_the_package_version():
     assert manifest["version"] == xuse.__version__
 
 
+@pytest.mark.parametrize('name', ['marketplace.json', '.claude-plugin/marketplace.json'])
+def test_marketplace_product_version_matches_package(name):
+    entries = [plugin for plugin in read_json(name)['plugins'] if plugin['name'] == 'x-use']
+    assert len(entries) == 1
+    assert entries[0]['version'] == xuse.__version__
+
+
 def test_published_manifests_stay_ascii():
     """These strings are rendered by MCP directories, and em dashes mojibake in
     consumers that assume latin-1."""

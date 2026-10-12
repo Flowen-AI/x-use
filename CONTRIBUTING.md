@@ -72,6 +72,12 @@ Do not weaken safety assertions to make an unsupported environment pass. DOM
 fixtures must use fictional identities and messages. Never include a real inbox
 dump, decrypted conversation, PIN, cookie, token, or browser profile.
 
+For credential-free legacy Selenium verification, run
+`python scripts/selenium_browser_smoke.py --timeout 120 --output selenium-smoke.json`.
+It uses isolated configuration, a temporary Chrome profile and local HTML only;
+Selenium Manager may download a matching driver. It is opt-in and separate from
+live inbox testing and the ordinary unit suite.
+
 ## MCP and skills
 
 New tools need explicit annotations, bounded input/output, structured errors,
@@ -89,6 +95,32 @@ direct-mode settings, and queue auto-drain without promising universal approval
 gates or complete visible-page history.
 
 ## Pull requests and releases
+
+### Development inbox unlocking
+
+Repeated browser fixture work does not need real credentials. For an authorized
+live development session, 3.1.0 supports a process-scoped unlock allowance:
+
+```powershell
+$env:XUSE_ENV = "development"
+$env:XUSE_DEV_UNLOCK_DAILY_CAP = "20"
+```
+
+Set these in the environment of the development MCP server, or its client
+registration's `env` object, then restart that server. POSIX shells use
+`export XUSE_ENV=development` and `export XUSE_DEV_UNLOCK_DAILY_CAP=20`.
+Launch with your existing private `X_USE_HOME`; provide the PIN separately in
+the server's secret environment, never in command arguments or source files.
+
+The override accepts 1–50 attempts per UTC day and requires the exact development
+mode. It cannot enable an explicitly disabled (`unlock: 0`) action. The normal
+default stays at five. Existing attempts still count; there is no reset endpoint.
+Challenges, manual pauses, cooldowns and per-minute limits remain active. Stop on
+a rejected PIN or X challenge. `get_account_safety` reports `daily_remaining`,
+`daily_reset_at` (Unix seconds) and the active override. Remove both environment
+variables and restart the server to restore normal configuration.
+
+### Preparing a release
 
 - Explain the problem, resulting behavior, tests, and remaining limitations.
 - Use focused commits and include related tests with the change.

@@ -27,8 +27,9 @@ Config (all optional, additive — ``config/settings.json``)::
                        "max_actions_per_account": 3}
     }
 
-SDK note: pinned to ``mcp>=1,<2``. The v2 alpha renames FastMCP to
-``MCPServer`` (``mcp.server.mcpserver``) — do not migrate until v2 is stable.
+SDK note: this server uses the maintained v1 API (``mcp>=1.30,<2``).
+SDK v2 is stable, but has breaking server, client and result-model changes;
+see the upstream migration guide before changing the dependency boundary.
 """
 import asyncio
 import logging
@@ -272,23 +273,36 @@ async def shutdown(server: FastMCP) -> None:
     finally:
         try:
             await ctx.session_pool.close_all()
-        except Exception:
-            logger.exception("Error while closing MCP session pool.")
+        except Exception as exc:
+            logger.warning("Error while closing MCP session pool (%s); details omitted.", type(exc).__name__)
+        finally:
+            # Anonymous proxy probes have a separate process owner. Keep that
+            # owner reachable and retry its cleanup during normal shutdown.
+            from .proxy_tools import close_proxy_probe
+            try:
+                if not await close_proxy_probe(ctx):
+                    logger.warning("Proxy probe cleanup remains unconfirmed during shutdown.")
+            except Exception:
+                # Driver errors can contain proxy userinfo. The retained owner
+                # remains available for a subsequent shutdown attempt.
+                logger.warning("Proxy probe cleanup failed during shutdown; details omitted.")
 
 
 def main() -> None:
     """Console entry point: run the stdio server until the client disconnects."""
     _enforce_stdio_stdout_hygiene()
-    server = create_server()
-    try:
-        server.run()  # stdio transport; blocks for the server lifecycle
-    finally:
-        # The lifespan closes browsers in their owning loop. This fallback
-        # covers setup failures and pools whose cleanup is loop independent.
+    from .ownership import server_home_lock
+    with server_home_lock(PROJECT_ROOT):
+        server = create_server()
         try:
-            asyncio.run(shutdown(server))
-        except Exception:
-            logger.exception("MCP server shutdown cleanup failed.")
+            server.run()  # stdio transport; blocks for the server lifecycle
+        finally:
+            # The lifespan closes browsers in their owning loop. This fallback
+            # covers setup failures and pools whose cleanup is loop independent.
+            try:
+                asyncio.run(shutdown(server))
+            except Exception:
+                logger.exception("MCP server shutdown cleanup failed.")
 
 
 if __name__ == "__main__":

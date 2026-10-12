@@ -1,0 +1,53 @@
+[
+  {
+    "probe": "unlock",
+    "ok": true,
+    "reason": null
+  },
+  {
+    "probe": "controls_before",
+    "ok": true,
+    "reason": null,
+    "actions": [
+      "mute"
+    ],
+    "layout": "conversation_info_popover",
+    "unsupported": [
+      {
+        "operation": "delete",
+        "reason": "unsupported_confirmation_layout"
+      }
+    ]
+  },
+  {
+    "probe": "reconcile_verified_unmuted_state",
+    "ok": true,
+    "reason": null
+  },
+  {
+    "probe": "reject_previous_attempt",
+    "ok": true,
+    "reason": null
+  },
+  {
+    "probe": "mute",
+    "ok": true,
+    "reason": null,
+    "write_boundaries": 1
+  },
+  {
+    "probe": "unmute",
+    "ok": true,
+    "reason": null,
+    "write_boundaries": 2
+  },
+  {
+    "probe": "controls_restored",
+    "ok": true,
+    "reason": null,
+    "actions": [
+      "mute"
+    ],
+    "restored": true
+  }
+]

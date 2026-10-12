@@ -18,6 +18,7 @@ from .analytics import AnalyticsMixin
 from .errors import BrowserActionError, BrowserBlocked, SessionError
 from .messaging import MessagingMixin
 from .notifications import NotificationsMixin
+from .controls import ControlsMixin
 
 _HANDLE = re.compile(r"^[A-Za-z0-9_]{1,15}$")
 _STATUS = re.compile(r"^/(?:[A-Za-z0-9_]{1,15}|i/web)/status/([0-9]+)(?:/(?:photo|video)/[0-9]+)?/?$")
@@ -143,8 +144,10 @@ def tweet_from_snapshot(data):
             tweet_id=tweet_id, tweet_url=permalink,
             user_handle=handle, user_name=data.get("name"), text_content=text,
             user_is_verified=bool(data.get("verified")), created_at=created,
-            reply_count=_count(data.get("reply_count")), retweet_count=_count(data.get("retweet_count")),
-            like_count=_count(data.get("like_count")), view_count=_count(data.get("view_count")),
+            reply_count=_count(data["reply_count"]) if data.get("reply_count") is not None else None,
+            retweet_count=_count(data["retweet_count"]) if data.get("retweet_count") is not None else None,
+            like_count=_count(data["like_count"]) if data.get("like_count") is not None else None,
+            view_count=_count(data["view_count"]) if data.get("view_count") is not None else None,
             profile_image_url=_https(data.get("profile_image_url")), media=media,
             embedded_media_urls=[item.url for item in media],
             tags=re.findall(r"(?<!\w)#[\w]+", text),
@@ -169,7 +172,7 @@ _SNAPSHOT = r"""card => {
   const handle = strings.find(x => /^@[A-Za-z0-9_]{1,15}$/.test(x)) || null;
   const count = name => {
     const node = first(`[data-testid="${name}"]`);
-    return node ? (node.textContent || node.getAttribute('aria-label') || '') : '';
+    return node ? (node.textContent || node.getAttribute('aria-label') || '') : null;
   };
   const media = [...card.querySelectorAll('[data-testid="tweetPhoto"] img')]
     .filter(own)
@@ -190,8 +193,8 @@ _SNAPSHOT = r"""card => {
     name:strings.find(x => x && !x.startsWith('@') && x !== 'Â·') || null,
     created_at:time && time.getAttribute('datetime'),
     verified:!!(user && user.querySelector('[data-testid="icon-verified"]')),
-    reply_count:count('reply'),retweet_count:count('retweet') || count('unretweet'),
-    like_count:count('like') || count('unlike'),view_count:analytics ? analytics.textContent : '',
+    reply_count:count('reply'),retweet_count:count('retweet') ?? count('unretweet'),
+    like_count:count('like') ?? count('unlike'),view_count:analytics ? analytics.textContent : null,
     profile_image_url:avatar && avatar.src, media};
 }"""
 _VISIBLE_SNAPSHOT = "card => (" + _ELIGIBLE_CARD + ")(card) ? (" + _SNAPSHOT + ")(card) : null"
@@ -211,7 +214,7 @@ def _safe(reason="read_failed"):
     return decorate
 
 
-class XBrowser(NotificationsMixin, AnalyticsMixin, MessagingMixin):
+class XBrowser(ControlsMixin, NotificationsMixin, AnalyticsMixin, MessagingMixin):
     backend = "playwright"
     action_confirmation_timeout_ms = 15000
     navigation_reuse_seconds = 30
@@ -331,13 +334,15 @@ class XBrowser(NotificationsMixin, AnalyticsMixin, MessagingMixin):
         samples = [await cards.nth(index).evaluate(_VISIBLE_SNAPSHOT) for index in range(min(await cards.count(), 100))]
         return [data for data in samples if isinstance(data, dict)]
 
-    async def _collect(self, limit, *, author=None, route=None):
+    async def _collect(self, limit, *, author=None, route=None, view_validator=None):
         expected_route = route or self.page.url
 
         async def verify_route():
             await self.check_blocked()
             if self.page.url != expected_route:
                 raise BrowserActionError("profile_mismatch" if author is not None else "unsupported_dom")
+            if view_validator is not None:
+                await view_validator()
 
         await verify_route()
         samples = await self._snapshots()
@@ -407,6 +412,7 @@ class XBrowser(NotificationsMixin, AnalyticsMixin, MessagingMixin):
             candidate = await self._find_target(target)
         if candidate is None:
             await self._wait_visible(self.page.locator(_CARD))
+            candidate = await self._find_target(target)
         deadline = time.monotonic() + (1.5 if wait_for_target else 0)
         while True:
             found = candidate
@@ -458,7 +464,7 @@ class XBrowser(NotificationsMixin, AnalyticsMixin, MessagingMixin):
 
     @_safe()
     async def get_tweet(self, url):
-        _, data, _ = await self._target(url)
+        _, data, _ = await self._target(url, wait_for_target=True)
         tweet = tweet_from_snapshot(data)
         return [tweet] if tweet else []
 
@@ -574,6 +580,7 @@ class XBrowser(NotificationsMixin, AnalyticsMixin, MessagingMixin):
             if not await row.is_visible():
                 continue
             identities = set()
+            labelled_handles = set()
             links = row.locator("a[href]")
             for link_index in range(min(await links.count(), 20)):
                 href = await links.nth(link_index).get_attribute("href")
@@ -581,6 +588,20 @@ class XBrowser(NotificationsMixin, AnalyticsMixin, MessagingMixin):
                 candidate = parsed.path.strip("/")
                 if parsed.scheme == "https" and parsed.netloc == "x.com" and not parsed.query and not parsed.fragment and _HANDLE.fullmatch(candidate) and candidate.lower() not in {"home", "i", "search", "messages", "settings", "explore"}:
                     identities.add(candidate.lower())
+                    if (await links.nth(link_index).inner_text()).strip().lower() == "@" + candidate.lower():
+                        labelled_handles.add(candidate.lower())
+            if len(identities) > 1:
+                # A biography can link to other accounts. The native avatar's
+                # identity plus a matching labelled profile link distinguishes
+                # the row owner without treating a mentioned user as a contact.
+                avatar = row.locator('[data-testid^="UserAvatar-Container-"]')
+                if await avatar.count() == 1 and await avatar.is_visible():
+                    owner = (await avatar.get_attribute("data-testid") or "").removeprefix("UserAvatar-Container-").lower()
+                    avatar_links = avatar.locator('a[href]')
+                    if (_HANDLE.fullmatch(owner) and owner in labelled_handles
+                            and await avatar_links.count() == 1
+                            and urljoin("https://x.com", await avatar_links.get_attribute("href") or "").lower() == "https://x.com/" + owner):
+                        identities = {owner}
             if len(identities) != 1:
                 raise BrowserActionError("unsupported_dom")
             candidate = identities.pop()

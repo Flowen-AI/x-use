@@ -2,12 +2,27 @@
 import asyncio
 import os
 import re
+from datetime import datetime, timezone
 from typing import Any, Literal, Optional
+
+from xuse.queue.store import QueueJournalError
 
 from . import executor as ex
 from .annotations import LOCAL_WRITE, LOCAL_WRITE_IDEMPOTENT, READ_ONLY_FROM_X, READ_ONLY_LOCAL
 from .browser_bridge import browser_call, uses_playwright
 from .executor import ToolError
+
+
+def session_metadata(pool, account):
+    """Local lifecycle evidence; a warm context is not a fresh login check."""
+    inspect_status = getattr(pool, "session_status", None)
+    if callable(inspect_status):
+        return inspect_status(account)
+    # Legacy Selenium and injected test pools have no async transport probe.
+    warm = pool.entry_for(account) is not None
+    return {"warm": warm, "state": "unknown" if warm else "cold",
+            "browser_connected": None, "tab_closed": None, "idle_seconds": None,
+            "live_authentication_checked": False}
 
 
 def _require_browser(ctx):
@@ -155,12 +170,17 @@ def register_browser_tools(server, ctx):
     @server.tool(annotations=READ_ONLY_LOCAL)
     @guard
     async def get_session_status(account: Optional[str] = None) -> dict[str, Any]:
-        """Inspect browser session metadata without reading cookies or starting a browser."""
+        """Inspect local session lifecycle (cold/starting/ready/busy/closing/
+        disconnected/closed) without reading cookies or starting a browser.
+        Ready means locally usable transport, not verified live X authentication.
+        Legacy backends may report unknown for a warm session.
+        """
         if account:
             ex.resolve_account(ctx, account)
         accounts = [account] if account else list(ctx.session_pool.active_accounts)
         return ok_(backend=getattr(ctx.session_pool, "backend", "selenium"),
-                   sessions=[{"account": a, "warm": ctx.session_pool.entry_for(a) is not None} for a in accounts])
+                   live_authentication_checked=False,
+                   sessions=[{"account": a, **session_metadata(ctx.session_pool, a)} for a in accounts])
 
     @server.tool(annotations=LOCAL_WRITE_IDEMPOTENT)
     @guard
@@ -201,13 +221,36 @@ def register_browser_tools(server, ctx):
     @server.tool(annotations=LOCAL_WRITE_IDEMPOTENT)
     @guard
     async def resolve_action_outcome(account: str, action_id: str, observed_outcome: str) -> dict[str, Any]:
-        """Operator reconciliation only: after inspecting X, record succeeded or not_sent for an uncertain action. Incorrect not_sent can cause duplicates."""
+        """After inspecting X, record succeeded or not_sent for an uncertain action. Repairs associated draft/queue history; queued not_sent work is cancelled and never resent automatically. Incorrect not_sent can cause duplicates."""
         ex.resolve_account(ctx, account)
         if ctx.safety_store is None:
             raise ToolError("Durable action policy is unavailable.")
         with ctx.safety_store.operation_lock(account):
             reference = await asyncio.to_thread(ctx.safety_store.reference, account, action_id)
             result = await asyncio.to_thread(ctx.safety_store.reconcile, account, action_id, observed_outcome)
+            if ctx.queue_store is not None:
+                queue_ids = []
+                for item in ctx.queue_store.list(account=account):
+                    if item.action_id != action_id and (not reference or reference.get("queue_id") != item.queue_id):
+                        continue
+                    latest = await asyncio.to_thread(ctx.safety_store.latest_queue_action, account, item.queue_id)
+                    if latest and latest["action_id"] != action_id:
+                        result["queue_update_skipped"] = "A newer action owns this queue item's current outcome."
+                        continue
+                    # Reconciliation updates history, never schedules another
+                    # send. not_sent requires a fresh explicit enqueue.
+                    try:
+                        ctx.queue_store.set_status(item.queue_id,
+                            "done" if observed_outcome == "succeeded" else "cancelled",
+                            action_id=action_id,
+                            completed_at=datetime.now(timezone.utc).isoformat()
+                                if observed_outcome == "succeeded" and not item.completed_at else None)
+                    except Exception:
+                        raise QueueJournalError(item.queue_id, action_id) from None
+                    queue_ids.append(item.queue_id)
+                if queue_ids:
+                    result["queue_ids"] = queue_ids
+                    result["queue_recovery"] = "Queue history updated. No action was scheduled or resent."
             if reference:
                 campaign_id, lead_id, draft_id = reference.get("campaign_id"), reference.get("lead_id"), reference.get("draft_id")
                 if campaign_id and lead_id:
@@ -242,7 +285,7 @@ def register_browser_tools(server, ctx):
     @server.tool(annotations=LOCAL_WRITE_IDEMPOTENT.model_copy(update={"openWorldHint": True}))
     @guard
     async def unlock_inbox(account: str, pin_env_var: str = "XUSE_INBOX_PIN") -> dict[str, Any]:
-        """Unlock the owner's encrypted inbox once using a server environment variable. PIN never appears in tool arguments, drafts, logs or stored state."""
+        """Unlock the owner's encrypted inbox once using a server environment variable. PIN never appears in tool arguments, drafts, logs or stored state. Inspect get_account_safety for remaining attempts and reset time; never loop on a rejected PIN or challenge."""
         _require_browser(ctx)
         ex.resolve_account(ctx, account)
         if not re.fullmatch(r"XUSE_[A-Z0-9_]*PIN", pin_env_var):

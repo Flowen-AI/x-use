@@ -1,0 +1,4 @@
+prune .cache
+exclude docs/SEO_AEO_AUDIT.md
+exclude docs/LAUNCH_PLAN.md
+exclude docs/github-about.json

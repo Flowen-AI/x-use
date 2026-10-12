@@ -408,6 +408,60 @@ class OutreachStore:
             raise OutreachError("Rendered message must contain between 1 and 10000 characters.")
         return message
 
+    @staticmethod
+    def _member_status(row, draft_store) -> str:
+        """Resolve a reservation without mutating either journal.
+
+        Only explicit rejection or confirmed execution resolves a pending
+        reservation. Missing, failed and uncertain drafts still block reuse.
+        """
+        status = row["status"]
+        if status == "pending" and row["draft_id"]:
+            try:
+                draft = draft_store.get(row["draft_id"])
+            except KeyError:
+                return status
+            if draft.status == "executed":
+                return "delivered"
+            if draft.status == "rejected":
+                return "rejected"
+        return status
+
+    def _has_other_reservation(self, conn, account, lead_id, campaign_id, draft_store):
+        rows = conn.execute(
+            "SELECT status,draft_id FROM campaign_leads WHERE account=? AND lead_id=? "
+            "AND campaign_id<>? AND status IN ('pending','delivered')",
+            (account, lead_id, campaign_id))
+        return any(self._member_status(row, draft_store) in ("pending", "delivered") for row in rows)
+
+    def preview_campaign_message(self, account: str, campaign_id: str, lead_id: str,
+                                 draft_store) -> Dict[str, Any]:
+        """Render one member's exact text without creating a draft or reservation."""
+        account = _account(account)
+        with self._connection() as conn:
+            campaign = self._campaign_row(conn, account, campaign_id)
+            lead = self._lead(self._lead_row(conn, account, lead_id))
+            member = conn.execute(
+                "SELECT status,draft_id FROM campaign_leads WHERE account=? AND campaign_id=? AND lead_id=?",
+                (account, campaign_id, lead_id)).fetchone()
+            if member is None:
+                raise OutreachError("This lead is not a member of the campaign.")
+            reasons = []
+            if campaign["status"] in ("paused", "completed"):
+                reasons.append("campaign_" + campaign["status"])
+            if lead.opt_out or self._suppressed(conn, account, lead.handle):
+                reasons.append("opted_out")
+            elif lead.status not in ELIGIBLE_LEAD_STATUSES:
+                reasons.append("lead_ineligible")
+            if self._member_status(member, draft_store) in ("pending", "delivered"):
+                reasons.append("already_reserved_or_delivered")
+            if self._has_other_reservation(conn, account, lead_id, campaign_id, draft_store):
+                reasons.append("reserved_or_delivered_in_another_campaign")
+            message = self._render(validate_template(campaign["message_template"]), lead)
+            return {"campaign_id": campaign_id, "lead_id": lead_id,
+                    "recipient": "@" + lead.handle, "text": message,
+                    "eligible": not reasons, "reasons": reasons}
+
     def prepare_campaign_messages(self, account: str, campaign_id: str, draft_store,
                                   max_messages: int = 5) -> List[Any]:
         """Reserve at most 20 personalized drafts; never execute an X action.
@@ -449,9 +503,7 @@ class OutreachStore:
                                          (member_status, account, campaign_id, row["lead_id"]))
                     if member_status in ("pending", "delivered"):
                         continue
-                    if conn.execute("SELECT 1 FROM campaign_leads WHERE account=? AND lead_id=? "
-                                    "AND campaign_id<>? AND status IN ('pending','delivered') LIMIT 1",
-                                    (account, row["lead_id"], campaign_id)).fetchone():
+                    if self._has_other_reservation(conn, account, row["lead_id"], campaign_id, draft_store):
                         continue
                     if (row["status"] not in ELIGIBLE_LEAD_STATUSES or row["opt_out"]
                             or self._suppressed(conn, account, row["handle"])):

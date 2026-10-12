@@ -1,5 +1,18 @@
 # MCP tool validation matrix
 
+Version **3.1.0** has **82 tools**. See the
+[browser and account hardening](PATCHRIGHT_HARDENING.md) for the latest browser, cookie, proxy and health
+validation, [parallel upgrade validation](PARALLEL_UPGRADE_VALIDATION.md) for
+the preceding per-tool evidence, and [controls](CONTROLS.md) for the
+ten publishing/inbox additions. The [initial audit](AUDIT_2026-10-12.md) covers
+the preceding 72-tool snapshot. The [control expansion audit](CONTROL_TEST_AUDIT_2026-10-12.md)
+records the earlier 82-tool snapshot. The release-specific results below are historical.
+
+| New tool | Effect | Current coverage |
+|---|---|---|
+| `get_runtime_info` | Local read | `tests/mcp/test_october_audit.py`, full stdio audit |
+| `preview_campaign_message` | Local read | `tests/outreach/test_campaign_preview.py`, full stdio audit |
+
 Version 3.0.0 includes the `x-use-inbox` workflow skill; the tool
 inventory remains 70. Seven skills now ship in both the package and plugin.
 Current packaging, cancellation and cross-platform CI changes are documented in
@@ -7,7 +20,7 @@ Current packaging, cancellation and cross-platform CI changes are documented in
 No live-account tests were added during that cleanup, so the individual live
 statuses below retain their recorded scope.
 
-This inventory covers the 70 tools registered in the current MCP server, using `data/dev/tool-inventory-current.json` as the tool-name/schema inventory. “Automated coverage” names repository tests that exercise the registered wrapper or the behavior it delegates to; it does not imply a real X account was used. Live status is taken only from safe aggregate fields in the live audit reports. The earlier broad read and inbox audits made no external writes. Separate authorized checks published two test posts and confirmed a controlled incoming-request reply; their results are distinguished below.
+This historical inventory covers the 70 tools registered for the 3.0.0 audit, using `data/dev/tool-inventory-current.json` as the tool-name/schema inventory. “Automated coverage” names repository tests that exercise the registered wrapper or the behavior it delegates to; it does not imply a real X account was used. Live status is taken only from safe aggregate fields in the live audit reports. The earlier broad read and inbox audits made no external writes. Separate authorized checks published two test posts and confirmed a controlled incoming-request reply; their results are distinguished below.
 
 Effect labels describe the tool's intended effect:
 

@@ -43,7 +43,7 @@ def fast_waits_and_no_sleeps(monkeypatch):
 
 
 ARTICLES_Q = "//article[.//a[contains(@href, '/status/')]]"
-LINKS_Q = ".//a[contains(@href, '/status/')]"
+LINKS_Q = ".//a[contains(@href, '/status/') and .//time and not(ancestor::*[@role='link'])]"
 REPLY_BTN_Q = ".//button[@data-testid='reply']"
 DIALOG_Q = "//div[@role='dialog' and @aria-modal='true']"
 TA_SCOPED_Q = ".//div[@data-testid='tweetTextarea_0' and @role='textbox']"
@@ -188,11 +188,11 @@ class TestErrorToastMeansFailure:
 
 
 class TestClickPathConfirmation:
-    def test_dialog_detach_confirms_reply(self):
+    def test_dialog_detach_alone_does_not_confirm_reply(self):
         bm, _driver, refs = build_world()
         refs["post_btn"]._on_click = lambda: setattr(refs["dialog"], "stale", True)
 
-        assert rh.reply_to_tweet(bm, tweet(), "my reply") is True
+        assert rh.reply_to_tweet(bm, tweet(), "my reply") is False
 
     def test_no_confirmation_after_click_returns_false(self):
         bm, _driver, refs = build_world()
@@ -201,7 +201,7 @@ class TestClickPathConfirmation:
 
 
 class TestKeyboardFallback:
-    def test_ctrl_enter_with_dialog_detach_returns_true(self):
+    def test_ctrl_enter_with_only_dialog_detach_returns_false(self):
         bm, _driver, refs = build_world(enabled_button=False)
 
         def on_keys(args):
@@ -210,7 +210,7 @@ class TestKeyboardFallback:
 
         refs["textarea"]._on_keys = on_keys
 
-        assert rh.reply_to_tweet(bm, tweet(), "my reply") is True
+        assert rh.reply_to_tweet(bm, tweet(), "my reply") is False
         assert (Keys.CONTROL, Keys.ENTER) in refs["textarea"].keys
 
     def test_ctrl_enter_no_dialog_with_toast_returns_true(self):
@@ -242,3 +242,21 @@ class TestExactStatusIdMatching:
 
         # Tweet id 123 must not match the article whose status id is 1234.
         assert rh.reply_to_tweet(bm, tweet("123"), "my reply") is False
+
+
+def test_failed_navigation_never_uses_previously_loaded_composer():
+    bm, _driver, refs = build_world()
+    bm.navigate_to.return_value = False
+    assert rh.reply_to_tweet(bm, tweet(), 'reply') is False
+    assert refs['post_btn'].clicks == 0
+    assert refs['textarea'].keys == []
+
+
+@pytest.mark.parametrize('before', [True, False])
+def test_reply_needs_fresh_explicit_success_toast(before):
+    bm, driver, refs = build_world(dialog=False)
+    if before:
+        driver._routes[ANY_TOAST_Q] = El(text='Your reply was sent.')
+    else:
+        refs['post_btn']._on_click = lambda: driver._routes.__setitem__(ANY_TOAST_Q, El(text='Draft saved'))
+    assert rh.reply_to_tweet(bm, tweet(), 'reply') is False

@@ -181,14 +181,14 @@ def test_account_import_copies_validated_snapshot_when_source_changes(tmp_path, 
     source.write_text(content, encoding="utf-8")
     target = tmp_path / "config"
     monkeypatch.setattr(accounts_tools, "CONFIG_DIR", target)
-    original = accounts_tools.normalize_cookies
+    original = accounts_tools.parse_cookie_export
     def change_after_validation(data):
         result = original(data)
         source.write_text("changed after validation", encoding="utf-8")
         return result
-    monkeypatch.setattr(accounts_tools, "normalize_cookies", change_after_validation)
+    monkeypatch.setattr(accounts_tools, "parse_cookie_export", change_after_validation)
     accounts_tools._import_cookies("account", str(source))
-    assert (target / "account_cookies.json").read_text(encoding="utf-8") == content
+    assert json.loads((target / "account_cookies.json").read_text(encoding="utf-8")) == original(content.encode())
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Real Windows file ACLs")

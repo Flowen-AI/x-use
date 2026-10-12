@@ -26,6 +26,9 @@ class QueuedAction(BaseModel):
     attempts: int = 0
     last_error: Optional[str] = None
     completed_at: Optional[str] = None
+    # A durable browser reservation, retained even for failed/cancelled work so
+    # an operator can reconcile the outcome without guessing from timestamps.
+    action_id: Optional[str] = None
 
 
 class AutoDrainConfig(BaseModel):

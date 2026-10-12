@@ -33,6 +33,10 @@ class ToolError(Exception):
     """Expected, user-facing failure (bad input, unknown account, action
     rejected). Converted into a structured error envelope by the tool layer."""
 
+    def __init__(self, message: str, *, reason: Optional[str] = None):
+        super().__init__(message)
+        self.reason = reason
+
 
 @dataclass
 class Ctx:

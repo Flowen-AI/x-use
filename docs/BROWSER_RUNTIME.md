@@ -39,6 +39,35 @@ The ownership lock is keyed by a hash of the authentication cookie, so aliases o
 
 Both async drivers use separate browser contexts to isolate cookies and storage within one browser process; the context model is documented in [Playwright isolation](https://playwright.dev/python/docs/browser-contexts). Browser state is sensitive; see [Playwright authentication guidance](https://playwright.dev/python/docs/auth). Contexts are warm only while the server is running; the source cookie export remains the login source after restart. Decrypted chat state and PINs are not persisted.
 
+Idle cleanup also retires Chromium and its driver once no contexts or startup
+operations remain and the idle timeout has elapsed. Retirement is serialized with
+new startup; a later tool can open a fresh runtime after process exit is verified.
+An active action keeps its context. Unconfirmed cleanup closes the pool to further
+work instead of replacing process ownership. A failed login that already launched
+Chromium is covered by the same idle cleanup.
+
+Process drainage uses a ten-second exit-polling allowance after termination and checks pinned
+process handles as well as Windows Job accounting. Pending transient identities
+are refreshed during that wait. Expiry retains ownership; it does not authorize
+a second process to take over an unconfirmed session. Browser/driver close steps
+have separate timeouts, so this is not a ten-second total shutdown guarantee.
+
+Explicit account close, update, deactivation and removal invalidate startup work
+for that account. An older in-flight startup or queued acquisition cannot publish
+a replacement using stale configuration. Other accounts retain their contexts.
+Invalid, disabled or conflicting account requests are checked before evicting a
+healthy context at capacity. Warm acquisitions also check that the account still
+exists and is enabled.
+
+`get_session_status` reports local lifecycle states: `cold`, `starting`, `ready`,
+`busy`, `closing`, `disconnected` or `closed`, plus transport/tab flags and idle
+seconds. `warm` remains available for compatibility. `ready` means the local
+transport is usable; it does not verify authentication, PIN state or X availability.
+`get_account_health` uses the exact async cookie loader and source precedence,
+including paths relative to the account configuration. Both explicitly distinguish
+local validation from live authentication. Lock permission and filesystem failures
+are reported separately from another process owning the account.
+
 Inbox operations enter `/i/chat` directly and keep the unlocked chat component active. Subsequent inbox/search/history reads reuse that page. Opening a visible conversation uses its exact validated row; history readiness requires messages or an explicit empty state, rather than only a composer. This preserves the active SPA state and avoids repeated page reloads.
 
 `get_inbox` and `search_conversations` accept `folder` (`inbox`, `requests`, or `other`), `inbox_filter` (`all`, `unread`, or `read`), and `unread_first`. Folder changes use observed native controls. The main inbox uses X's native Unread selection where available; its verified membership and visible unread dots have distinct evidence sources. Filtering and prioritization happen before the response limit. Missing or contradictory unread evidence stays unknown; an empty filtered result covers only the observed window. Listing never opens or accepts a conversation. Other requests may be spam or lower priority; this folder does not establish that each sender is spam.
@@ -62,6 +91,20 @@ On Windows use `py -3 scripts/setup_uv.py`. The helper installs missing uv local
 
 Alternatively, use installed Chrome or Edge by setting `mcp.browser_channel` to `chrome` or `msedge`; no managed Chromium download is then needed. A cookie export must contain exactly one nonempty, secure `auth_token` and `ct0` for `x.com` or `.x.com`. Keep the file outside source control and configure `cookie_file_path` in your existing account record. Do not paste cookie contents into MCP tool calls.
 
+Async cookie files may be a JSON array, a `cookies` envelope or a Playwright
+storage-state export. Only cookies are loaded; origin storage and IndexedDB are
+ignored. Duplicate JSON keys, ambiguous scopes, unsupported cookie partitions and
+conflicting expiry aliases are rejected. Imports are bounded to 1 MiB. Account
+add/update stores a normalized cookie array through a private temporary file and
+atomic replacement, including when source and destination are the same file. If
+the account configuration update fails, the previous file is restored. Browser
+refreshes are not automatically written back to these source files.
+
+Account-tool imports are stored next to the selected accounts configuration.
+Custom configuration directories use absolute stored cookie paths; equal account
+IDs in separate homes do not share an import destination. Existing relative paths
+are still resolved from the accounts directory before the application root.
+
 Example `settings.json` additions:
 
 ```json
@@ -84,14 +127,15 @@ Example `settings.json` additions:
       "max_actions_per_minute": 6,
       "daily_caps": {
         "read": 300, "post": 5, "reply": 15, "like": 30,
-        "retweet": 10, "message": 10, "follow": 10, "unlock": 5
+        "retweet": 10, "message": 10, "follow": 10, "unlock": 5,
+        "bookmark": 30, "inbox": 20
       }
     }
   }
 }
 ```
 
-These are local defaults, not X's published limits. Attempts count even if they fail; daily budgets reset at UTC midnight. A cap of zero disables that action. Budget errors report `reason` and `retry_after_seconds`; the server does not sleep indefinitely or automatically repeat a write. Legacy `browser_settings` stealth, random-user-agent and driver flags do not apply to the async drivers. Patchright supports Chromium browsers; the server does not expose Firefox or WebKit.
+These are local defaults, not X's published limits. The `bookmark` and `inbox` keys were added in 3.1.0; omit them when configuring 3.0.0. Attempts count even if they fail; daily budgets reset at UTC midnight. A cap of zero disables that action. Budget errors report `reason` and `retry_after_seconds`; the server does not sleep indefinitely or automatically repeat a write. Legacy `browser_settings` stealth, random-user-agent and driver flags do not apply to the async drivers. Patchright supports Chromium browsers; the server does not expose Firefox or WebKit.
 
 ## New tools
 
@@ -165,7 +209,7 @@ Inactive accounts block browser reads and writes, even when warm. Local status a
 
 Login challenges, account restrictions, PIN gates and rate limits stop browser work. Supply fresh cookies or resolve the account challenge yourself, then call `resume_account_actions`. For a recognized inbox PIN screen, set a server environment variable such as `XUSE_INBOX_PIN` and call `unlock_inbox`; the PIN never enters a draft, database, result or browser error log. The server does not solve CAPTCHA or add user-agent/fingerprint overrides. A browser driver's detection claims are not account-safety guarantees.
 
-An interrupted or unconfirmed write remains `started` or `uncertain` in the ledger. An identical action cannot automatically run again. Inspect X first, then reconcile it as `succeeded` or `not_sent`. Only choose `not_sent` when you have verified the action did not reach X. Reconciliation is blocked while an action is still executing. Recovery references link actions to drafts and campaign members, and a confirmed outcome can repair bookkeeping without another send. SQLite and draft JSONL are separate stores, so interrupted campaign preparation stays reserved rather than risking duplicate delivery. Thread runs also persist segment state: an uncertain segment cannot be resumed, even after generic action reconciliation; inspect it and cancel any remaining parts if needed.
+An interrupted or unconfirmed write remains `started` or `uncertain` in the ledger. An identical action cannot automatically run again. Inspect X first, then reconcile it as `succeeded` or `not_sent`. Only choose `not_sent` when you have verified the action did not reach X. Reconciliation is blocked while an action is still executing. Recovery references link actions to drafts, campaign members and queue items before browser execution. A confirmed outcome can repair bookkeeping without another send. Queue reconciliation marks succeeded work done and known-not-sent work cancelled; it never requeues automatically. The queue ID survives process interruption in the SQLite ledger, and recovery only updates the same account's latest reservation. SQLite and draft JSONL are separate stores, so interrupted campaign preparation stays reserved rather than risking duplicate delivery. Thread runs also persist segment state: an uncertain segment cannot be resumed, even after generic action reconciliation; inspect it and cancel any remaining parts if needed.
 
 Inbox reads describe the rendered subset, with `partial=true` and `pagination=visible_only`. Unknown encrypted chat layouts return `unsupported_dom` rather than an invented empty inbox. Live verification on 2026-10-08 through 2026-10-09 used registered MCP tools with bundled, headless Patchright and the configured action limits. It verified the four-field owner passcode screen inside an open shadow root, ten visible conversations, a visible-summary search match and rendered conversation history. Direction and read/unread states remained unknown where X supplied no recognized independent evidence.
 

@@ -72,13 +72,17 @@ jobs:
       - name: Run offline tests
         # Native browsers are required against the clean wheel below. Keep
         # synthetic OS process-identity tests in every source/Python job.
-        run: >-
-          python -m pytest -q -m 'not smoke'
-          --ignore-glob='tests/browser/*_dom.py'
-          --ignore=tests/browser/test_network_privacy.py
-          --deselect=tests/browser/test_session_process_cleanup.py::test_native_synthetic_cleanup_drains_owned_processes
-          --deselect=tests/mcp/test_thread_tools.py::test_native_intercepted_thread_with_reply_media
-          --junitxml=test-results/unit.xml
+        run: |
+          python scripts/audit_mcp.py --report test-results/source-protocol.json
+          python scripts/audit_test_coverage.py \
+            --inventory test-results/source-protocol.json \
+            --report test-results/tool-functional-coverage.json -- \
+            -q -m 'not smoke' \
+            --ignore-glob='tests/browser/*_dom.py' \
+            --ignore=tests/browser/test_network_privacy.py \
+            --deselect=tests/browser/test_session_process_cleanup.py::test_native_synthetic_cleanup_drains_owned_processes \
+            --deselect=tests/mcp/test_thread_tools.py::test_native_intercepted_thread_with_reply_media \
+            --junitxml=test-results/unit.xml
       - name: Build and validate wheel and source distribution
         run: |
           python -m build
@@ -101,6 +105,10 @@ jobs:
           "$WHEEL_PYTHON" scripts/ci_browser_smoke.py
           --mode package --expect-installed
           --report test-results/package-smoke.json
+      - name: Exercise every installed MCP tool and local workflows over stdio
+        run: >-
+          "$WHEEL_PYTHON" scripts/audit_mcp.py
+          --report test-results/full-protocol-audit.json
       - name: Install declared wheel development extras for DOM scenarios
         if: matrix.python-version == '3.12'
         run: |

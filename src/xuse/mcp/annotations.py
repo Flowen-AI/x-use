@@ -31,7 +31,9 @@ Publishing is annotated ``destructiveHint=False`` deliberately: posting adds a
 tweet rather than overwriting anything, which is what the spec's additive vs
 destructive distinction asks about. It is irreversible and public, but that is
 what the approval gates are for, and misreporting it as destructive would make
-the flag useless for the tools that genuinely delete config.
+the flag useless for the tools that genuinely delete config. The generic
+approve_draft gate overrides this default because it can also approve post or
+conversation deletion and post editing.
 """
 
 from mcp.types import ToolAnnotations

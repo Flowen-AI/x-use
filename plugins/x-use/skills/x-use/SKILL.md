@@ -4,7 +4,6 @@ description: Route x-use X (Twitter) workflows for research, inbox reads, review
 ---
 
 # x-use
-
 x-use is an MCP server that drives a real, logged-in browser on X (Twitter):
 post, reply, search, like, retweet, schedule, and manage multiple accounts.
 It needs no X API key. Interactive use needs no LLM key either. YOU are the
@@ -31,7 +30,7 @@ writer; the server drives the browser.
 
 ## Tool groups
 
-- **Read-only:** `list_accounts`, `get_account`, `get_metrics`,
+- **Read-only:** `get_runtime_info`, `preview_campaign_message`, `list_accounts`, `get_account`, `get_metrics`,
   `search_tweets`, `search_profile`, `get_tweet`, `prepare_reply`, `list_queue`, `list_drafts`,
   `get_draft`, `get_run_status`, `get_account_health`,
   `list_proxies`
@@ -39,6 +38,7 @@ writer; the server drives the browser.
   `reply_to_tweet`, `engage`, `send_message`, `follow_profile`;
   `approve_draft` executes reviewed work and `reject_draft` changes local state.
   Messages/follows always require approval, even when draft mode is disabled.
+- **Controls:** `bookmark_tweet`, `remove_bookmark`, `unlike_tweet`, `undo_retweet`, `unfollow_profile`, `edit_tweet`, `delete_tweet`, `manage_conversation` always draft. Edits/deletions need current `expected_text` and `self_handles`. Inspect exact targets; reconcile uncertainty before retrying. `get_bookmarks` and `get_conversation_controls` read supported visible layouts only.
 - **Queue:** `queue_post`, `queue_engagement`, `cancel_queued_action`,
   `process_queue`
 - **Paged local records:** `list_queue` returns `next_offset`; pass it as the

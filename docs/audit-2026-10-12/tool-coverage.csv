@@ -1,0 +1,73 @@
+tool,stdio_contract_checked,local_workflow_checked,local_success_observed,live_result,live_note
+add_account,True,True,True,not exercised,isolated coverage; no live operation claimed
+add_campaign_leads,True,True,True,not exercised,isolated coverage; no live operation claimed
+add_proxy,True,True,True,not exercised,isolated coverage; no live operation claimed
+approve_draft,True,True,False,ok,one authorized DM; confirmed and independently read back once
+cancel_queued_action,True,True,True,not exercised,isolated coverage; no live operation claimed
+cancel_thread,True,True,True,not exercised,isolated coverage; no live operation claimed
+close_session,True,True,True,ok,bounded read/status or session operation
+continue_thread,True,True,True,not exercised,isolated coverage; no live operation claimed
+create_campaign,True,True,True,not exercised,isolated coverage; no live operation claimed
+draft_post_variations,True,False,False,not exercised,isolated coverage; no live operation claimed
+engage,True,False,False,not exercised,isolated coverage; no live operation claimed
+follow_profile,True,True,True,not exercised,isolated coverage; no live operation claimed
+generate_and_post,True,False,False,not exercised,isolated coverage; no live operation claimed
+get_account,True,True,True,not exercised,isolated coverage; no live operation claimed
+get_account_analytics,True,False,False,ok,Premium gate observed; no metrics returned
+get_account_health,True,True,True,ok,bounded read/status or session operation
+get_account_safety,True,True,True,ok,bounded read/status or session operation
+get_campaign,True,True,True,not exercised,isolated coverage; no live operation claimed
+get_campaign_summary,True,True,True,not exercised,isolated coverage; no live operation claimed
+get_conversation,True,False,False,ok,bounded read/status or session operation
+get_draft,True,True,True,not exercised,isolated coverage; no live operation claimed
+get_home_feed,True,False,False,ok,bounded read/status or session operation
+get_inbox,True,False,False,ok,bounded read/status or session operation
+get_lead,True,True,True,not exercised,isolated coverage; no live operation claimed
+get_metrics,True,True,True,not exercised,isolated coverage; no live operation claimed
+get_notifications,True,False,False,ok,bounded read/status or session operation
+get_profile,True,False,False,ok,bounded read/status or session operation
+get_profile_connections,True,False,False,ok,bounded read/status or session operation
+get_profile_context,True,False,False,ok,bounded read/status or session operation
+get_profile_posts,True,False,False,ok,bounded read/status or session operation
+get_run_status,True,False,False,not exercised,isolated coverage; no live operation claimed
+get_runtime_info,True,False,False,ok,bounded read/status or session operation
+get_session_status,True,True,True,ok,bounded read/status or session operation
+get_thread,True,False,False,ok,bounded read/status or session operation
+get_thread_run,True,True,True,not exercised,isolated coverage; no live operation claimed
+get_tweet,True,False,False,ok,bounded read/status or session operation
+list_accounts,True,False,False,ok,bounded read/status or session operation
+list_campaigns,True,True,True,not exercised,isolated coverage; no live operation claimed
+list_drafts,True,True,True,not exercised,isolated coverage; no live operation claimed
+list_leads,True,True,True,not exercised,isolated coverage; no live operation claimed
+list_proxies,True,True,True,not exercised,isolated coverage; no live operation claimed
+list_queue,True,True,True,not exercised,isolated coverage; no live operation claimed
+opt_out_lead,True,True,True,not exercised,isolated coverage; no live operation claimed
+pause_account_actions,True,True,True,not exercised,isolated coverage; no live operation claimed
+post_tweet,True,True,True,not exercised,isolated coverage; no live operation claimed
+prepare_campaign_messages,True,True,True,not exercised,isolated coverage; no live operation claimed
+prepare_outreach,True,False,False,not exercised,isolated coverage; no live operation claimed
+prepare_reply,True,False,False,ok,bounded read/status or session operation
+prepare_thread,True,True,True,not exercised,isolated coverage; no live operation claimed
+preview_campaign_message,True,True,True,not exercised,isolated coverage; no live operation claimed
+process_queue,True,True,True,not exercised,isolated coverage; no live operation claimed
+queue_engagement,True,True,True,not exercised,isolated coverage; no live operation claimed
+queue_post,True,True,True,not exercised,isolated coverage; no live operation claimed
+reject_draft,True,True,True,not exercised,isolated coverage; no live operation claimed
+remove_account,True,True,True,not exercised,isolated coverage; no live operation claimed
+remove_proxy,True,True,True,not exercised,isolated coverage; no live operation claimed
+reply_to_tweet,True,True,True,not exercised,isolated coverage; no live operation claimed
+research_and_stage,True,False,False,not exercised,isolated coverage; no live operation claimed
+resolve_action_outcome,True,False,False,not exercised,isolated coverage; no live operation claimed
+resume_account_actions,True,False,False,not exercised,isolated coverage; no live operation claimed
+run_cycle,True,False,False,not exercised,isolated coverage; no live operation claimed
+search_conversations,True,False,False,ok,bounded read/status or session operation
+search_profile,True,False,False,ok,bounded read/status or session operation
+search_tweets,True,False,False,ok,bounded read/status or session operation
+send_message,True,True,True,ok,one authorized draft
+set_account_active,True,True,True,not exercised,isolated coverage; no live operation claimed
+set_campaign_status,True,True,True,not exercised,isolated coverage; no live operation claimed
+test_proxy,True,False,False,not exercised,isolated coverage; no live operation claimed
+unlock_inbox,True,False,False,ok,bounded read/status or session operation
+update_account,True,True,True,not exercised,isolated coverage; no live operation claimed
+update_lead_status,True,True,True,not exercised,isolated coverage; no live operation claimed
+upsert_lead,True,True,True,not exercised,isolated coverage; no live operation claimed

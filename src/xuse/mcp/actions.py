@@ -59,7 +59,7 @@ async def exec_post(
     key_material = (text or "") + "|" + str(media or []) + "|" + str(community)
     dedup_key = f"post_{account_id}_{hashlib.sha1(key_material.encode('utf-8')).hexdigest()[:12]}"
     if ex.is_processed(ctx, dedup_key):
-        raise ToolError("An identical post was already executed for this account (dedup).")
+        raise ToolError("An identical post was already executed for this account (dedup).", reason="already_executed")
     if uses_playwright(ctx):
         options = {"media_manifest": media_manifest} if media_manifest is not None else {}
         return await _browser_write(ctx, account_id, "post", "post", dedup_key, text,
@@ -108,7 +108,7 @@ async def exec_reply(
         raise ToolError("Reply text must not be empty.")
     dedup_key = f"reply_{account_id}_{tweet_id}"  # same key format as the orchestrator
     if ex.is_processed(ctx, dedup_key):
-        raise ToolError(f"Already replied to tweet {tweet_id} from this account (dedup).")
+        raise ToolError(f"Already replied to tweet {tweet_id} from this account (dedup).", reason="already_executed")
     if uses_playwright(ctx):
         options = {"media": media} if media else {}
         if media_manifest is not None:
@@ -143,7 +143,7 @@ async def exec_like(ctx: Ctx, account_id: str, tweet_id: str, tweet_url: Optiona
     action_config = ex.current_action_config(ctx, model)
     dedup_key = f"like_{account_id}_{tweet_id}"
     if ex.is_processed(ctx, dedup_key):
-        raise ToolError(f"Already liked tweet {tweet_id} from this account (dedup).")
+        raise ToolError(f"Already liked tweet {tweet_id} from this account (dedup).", reason="already_executed")
     if uses_playwright(ctx):
         return await _browser_write(ctx, account_id, "like", "like", dedup_key,
                                     tweet_url or f"https://x.com/i/status/{tweet_id}", action_context=action_context)
@@ -173,7 +173,7 @@ async def exec_retweet(ctx: Ctx, account_id: str, tweet_id: str, tweet_url: Opti
     action_config = ex.current_action_config(ctx, model)
     dedup_key = f"retweet_{account_id}_{tweet_id}"
     if ex.is_processed(ctx, dedup_key):
-        raise ToolError(f"Already retweeted tweet {tweet_id} from this account (dedup).")
+        raise ToolError(f"Already retweeted tweet {tweet_id} from this account (dedup).", reason="already_executed")
     if uses_playwright(ctx):
         return await _browser_write(ctx, account_id, "retweet", "retweet", dedup_key,
                                     tweet_url or f"https://x.com/i/status/{tweet_id}", action_context=action_context)
@@ -259,6 +259,9 @@ async def generate_reply_text(ctx: Ctx, account_id: str, original: ScrapedTweet)
 
 async def execute_draft(ctx: Ctx, draft) -> Dict[str, Any]:
     """Execute an approved draft via the same executors as direct mode."""
+    from .control_tools import CONTROL_ACTIONS, execute_control_draft
+    if draft.action in CONTROL_ACTIONS:
+        return await execute_control_draft(ctx, draft)
     payload = draft.payload
     context = {"draft_id": draft.draft_id}
     if draft.action == "publish_thread":

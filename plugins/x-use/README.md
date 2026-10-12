@@ -45,7 +45,7 @@ contents into chat.
 
 ## Install from the GitHub marketplace
 
-Install the server and Chromium using the [package installation steps](../../README.md#install).
+Install the server and Chromium using the [package installation steps](../../README.md#quickstart).
 Before launching Claude Code, set a stable private `X_USE_HOME` in that shell:
 
 ```powershell

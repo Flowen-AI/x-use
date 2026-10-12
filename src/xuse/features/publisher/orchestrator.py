@@ -40,13 +40,24 @@ class TweetPublisher:
         os.makedirs(self.media_dir, exist_ok=True)
 
     async def post_new_tweet(self, content: TweetContent, llm_settings: Optional[LLMSettings] = None) -> bool:
+        if content is None:
+            logger.error("Cannot publish without content.")
+            return False
         # 1) Generate text if needed
         tweet_text = await generate_post_text_if_needed(
             content.text, llm_settings, self.llm_service
         ) if content and content.text else (content.text if content else "")
 
         # 2) Prepare media (download URLs, merge with local paths). Pass BrowserManager for authenticated downloads.
-        final_media_paths = await prepare_media_paths(content, self.media_dir, self.browser_manager)
+        try:
+            final_media_paths = await prepare_media_paths(content, self.media_dir, self.browser_manager)
+        except Exception as exc:
+            logger.error("Media preparation failed (%s); no post submitted.", type(exc).__name__)
+            return False
+        expected_media_count = len(content.local_media_paths or []) + len(content.media_urls or [])
+        if len(final_media_paths) != expected_media_count:
+            logger.error("Some requested media could not be prepared; no post submitted.")
+            return False
 
         # 3) Compose and post
         return compose_and_post(

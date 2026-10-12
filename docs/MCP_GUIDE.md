@@ -9,6 +9,41 @@ profile, inbox, lead, campaign, recovery, and thread tools are documented in
 below retain their schemas; browser work uses Patchright by default.
 `run_cycle` remains an explicit Selenium compatibility tool.
 
+## Local diagnostics and campaign preview
+
+The following two tools and data-home process ownership are included in 3.1.0,
+which has 82 tools compared with 70 in 3.0.0. The new
+publishing, bookmark and inbox controls are documented in [CONTROLS.md](CONTROLS.md).
+
+`get_runtime_info()` reports the x-use/Python/SDK versions, configured browser
+backend, tool count, draft mode and auto-drain state. Its `execution_support`
+distinguishes async browser workflows, Selenium's legacy `run_cycle`, and whether
+durable safety and resumable thread execution are configured. `unlock_policy`
+reports the effective UTC daily cap and development override, or `null` for
+Selenium; remaining attempts require the account-specific `get_account_safety`.
+It never starts a browser or reads account journals, and excludes account
+identities, credentials, raw environment values and paths.
+Its SDK protocol version describes the supported revision, not proof that a
+particular client negotiated it. It does not test live authentication.
+`browser_configuration` reports configured channel/headless options and the
+ephemeral profile policy for async backends; it is `null` for Selenium. An unset
+channel is reported as `driver_default`, without guessing the launched binary.
+
+`preview_campaign_message(account, campaign_id, lead_id)` renders one existing
+campaign member's exact personalized message and local eligibility reasons.
+It creates no draft or reservation and does not call X or an LLM. Paused or
+completed campaigns, opt-outs, inactive accounts and prior reservations are
+reported explicitly. Missing template values return a tool error. Eligibility
+is a snapshot; preparation and approval check again. Private lead notes are
+not included in the result.
+
+The stdio entry points allow one server process per `X_USE_HOME`. This prevents
+stale JSONL caches in another client from ignoring draft rejections or queue
+cancellations. Ownership is released by the OS after a crash. Close the old
+server before connecting another client; do not share custom journal paths
+between different data homes. Embedded `create_server()` callers must provide
+equivalent ownership if they use persistent shared state.
+
 ## The two safety gates
 
 1. **Draft gate (on by default).** Write tools (`post_tweet`,
@@ -198,8 +233,27 @@ Poll `run_cycle` handles.
 
 ### get_account_health(account)
 
-Config, cookie validity, metrics, session, queue, and draft state in one
-call.
+Config, cookie validity, metrics, session, queue, and draft state in one call.
+Async cookie validation uses the same loader as browser startup, including
+source precedence and account-relative paths. It reports safe reason codes and
+does not return the cookie file path or contents. Valid cookies mean a locally
+accepted export, not proof of an active X login.
+
+The `health` object adds a transparent 0–100 operational score, criterion-level
+evidence, readiness, blockers, unknown points and recommendations. It makes no
+X requests and cannot award its ten live-authentication points; the local-only
+maximum is 90. A pause, cold session or normal pacing interval is not account
+damage. Readiness blockers take precedence over the numeric score. See the
+[full rubric and interpretation](ACCOUNT_HEALTH.md).
+
+### get_session_status(account?)
+
+Local lifecycle, browser connection, tab state and idle duration, without browser
+startup or a page read. Pass an account to inspect a cold or starting session;
+omitting it lists the current warm entries. States are `cold`, `starting`, `ready`,
+`busy`, `closing`, `disconnected` and `closed`. `warm` is retained for compatibility;
+`ready` does not establish live authentication. Legacy backends may return `unknown`
+for a warm session. `live_authentication_checked` is always false here.
 
 ### list_proxies()
 
@@ -252,6 +306,13 @@ Cancel a pending or failed item.
 
 ### process_queue(account?, max_actions=5)
 
+Queued browser execution records its `queue_id` in the durable action ledger
+before acting. Failed drain entries retain their `action_id`; `list_queue` also
+exposes it when available. After independently checking X, use
+`resolve_action_outcome` to repair the queue: `succeeded` marks it done and
+`not_sent` cancels it. Neither schedules another attempt. Reconciliation is bound
+to the same account and latest reservation, including recovery after a restart.
+
 The approval gate: drains due items through the shared pacing/dedup/metrics
 path with daily caps.
 
@@ -277,6 +338,9 @@ server-side LLM and stages each as a post draft. Pick one with
 ### add_account(account_id, cookie_file?, proxy?, target_keywords?, persona?, is_active=true)
 
 Add an account. Cookies import from a file path on the server, never inline.
+Imports are stored beside the selected accounts configuration. Custom configuration
+directories use absolute stored paths so accounts with the same ID in separate
+homes cannot overwrite each other's imported credentials.
 `persona` is freeform markdown describing the account's voice/engagement
 style (max 4000 chars).
 
@@ -305,19 +369,25 @@ validated + backed up (config/backups/). Assign with
 ### remove_proxy(pool, proxy_url, confirm=false)
 
 Remove a proxy from a pool. Requires `confirm=true`. Response includes
-`affected_accounts`, accounts still assigned `pool:<name>` (emptying a
-referenced pool is allowed but reported; those accounts fall back to no proxy).
+`affected_accounts`, accounts still assigned `pool:<name>`. Emptying a referenced
+pool is allowed but reported; those accounts return an error until a valid route
+is configured. They do not silently fall back to a direct connection.
 
 ### test_proxy(account?, proxy_url?)
 
-Probe a proxy without risking an account: resolves the effective proxy
-(explicit `proxy_url` wins; otherwise the account's direct URL or `pool:<name>`
-assignment), launches a throwaway, cookieless browser (no account cookies,
-never the warm session) whose startup performs an anonymous x.com/home load
-before the IP-echo fetch, so `latency_ms` includes browser boot, fetches an
-IP-echo page, returns `{proxy (masked), egress_ip, latency_ms}`. With a
-`round_robin` pool, probing via `account` advances the pool's rotation
-cursor. Failure returns a credential-masked error envelope.
+Resolve the effective proxy (`proxy_url` wins, otherwise the account route
+and global fallback apply) and launch a temporary browser using the configured
+backend. The probe loads only a fixed IP-echo endpoint, without account cookies,
+X navigation or a warm account session. It returns
+`{proxy (masked), egress_ip, latency_ms}`; latency includes browser startup and
+the request, excluding cleanup. Failure returns a credential-masked error.
+
+The request has a 60-second wait budget and a 25-second navigation timeout;
+cleanup can take additional time. Interrupted or uncertain cleanup retains the
+browser owner and blocks another probe until cleanup succeeds. For Selenium,
+successful quit is a WebDriver acknowledgement, not proof of OS process exit.
+Probing a legacy `round_robin` pool advances its cursor; async backends reject
+rotating strategies. Local health checks never advance pool cursors.
 
 ## Personas
 
@@ -370,11 +440,11 @@ The same guide covers marketplace installation from the GitHub repository.
   backend, install the matching browser with
   `python -m patchright install chromium`; installed Chrome or Edge can be
   selected with `mcp.browser_channel`.
-- **Proxy probe failures.** `test_proxy` never risks an account: failure
-  returns a credential-masked error envelope. Check the scheme
-  (http/https/socks4/socks5), that `${ENV_VAR}` variables are exported in the
-  server's environment, and that the egress endpoint is reachable from your
-  network.
+- **Proxy probe failures.** `test_proxy` uses a separate browser without
+  account cookies and returns credential-masked failures. Check the backend's
+  [supported proxy protocols](CONFIG_REFERENCE.md), that `${ENV_VAR}` variables
+  are exported in the server's environment, and that the egress endpoint is
+  reachable. SOCKS4 is legacy-only; Patchright and Playwright reject it.
 - **Logs.** Per-account JSONL event logs live in
   `logs/accounts/<account_id>.jsonl`; metrics counters in
   `data/metrics/<account_id>.json`.

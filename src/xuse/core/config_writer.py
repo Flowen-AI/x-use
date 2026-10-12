@@ -13,6 +13,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
+from pydantic import ValidationError
 
 from xuse.core.config_loader import normalize_account_dict
 from xuse.models import AccountConfig, ActionConfig
@@ -56,15 +57,38 @@ class AccountsConfigWriter:
 
     def _validate(self, accounts: List[Dict[str, Any]]) -> None:
         errors: List[str] = []
+        account_ids = set()
         for acc in accounts:
             label = acc.get("account_id", "<unknown>") if isinstance(acc, dict) else "<unknown>"
+            if not isinstance(label, str):
+                label = "<unknown>"
             normalized = normalize_account_dict(acc) if isinstance(acc, dict) else acc
             try:
                 AccountConfig.model_validate(normalized)
-            except Exception as e:
-                errors.append(f"{label}: {e}")
+            except ValidationError as exc:
+                # Pydantic's default string includes input values, which may
+                # contain an invalid cookie, password or API-key payload.
+                for problem in exc.errors(include_input=False, include_url=False):
+                    field = ".".join(str(part) for part in problem["loc"]) or "account"
+                    detail = problem["type"]
+                    # Only built-in numeric length constraints are safe to
+                    # surface; arbitrary validator messages/context can carry
+                    # submitted secrets even when input itself is excluded.
+                    bound = {"string_too_long": "max_length",
+                             "string_too_short": "min_length"}.get(detail)
+                    limit = (problem.get("ctx") or {}).get(bound) if bound else None
+                    if isinstance(limit, int) and not isinstance(limit, bool):
+                        detail += f", {bound}={limit}"
+                    errors.append(f"{label}: invalid {field} ({detail}).")
+            except Exception:
+                errors.append(f"{label}: invalid account configuration.")
             if not isinstance(acc, dict):
                 continue
+            account_id = acc.get("account_id")
+            if isinstance(account_id, str):
+                if account_id in account_ids:
+                    errors.append(f"Duplicate account id '{account_id}'.")
+                account_ids.add(account_id)
             # Pydantic ignores unknown keys by default, but the RAW dict (not
             # the cleaned model) is what gets written — so a typo'd knob would
             # persist and be silently ignored forever. Reject them at the gate.
@@ -115,18 +139,26 @@ class AccountsConfigWriter:
 
     def _atomic_write(self, accounts: List[Dict[str, Any]]) -> None:
         target = self.accounts_file
-        fd, tmp_name = tempfile.mkstemp(dir=str(target.parent),
-                                        prefix=".accounts-", suffix=".tmp")
+        fd, tmp_name = None, None
         try:
+            fd, tmp_name = tempfile.mkstemp(dir=str(target.parent),
+                                            prefix=".accounts-", suffix=".tmp")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
+                fd = None  # The context manager now owns this descriptor.
                 json.dump(accounts, f, indent=2, ensure_ascii=False)
                 f.write("\n")
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp_name, target)
         except Exception as e:
-            try:
-                os.unlink(tmp_name)
-            except OSError:
-                pass
+            if fd is not None:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
+            if tmp_name is not None:
+                try:
+                    os.unlink(tmp_name)
+                except OSError:
+                    pass
             raise ConfigWriteError(f"Failed to write {target}: {e}") from e

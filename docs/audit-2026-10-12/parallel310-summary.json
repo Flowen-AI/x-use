@@ -1,0 +1,115 @@
+{
+  "version": "3.1.0",
+  "status": "unpublished preparation",
+  "agents": 3,
+  "tool_count": 82,
+  "stdio_calls": 172,
+  "positive_stdio_tools": 54,
+  "positive_wrapper_tools": 75,
+  "positive_wrapper_calls": 422,
+  "positive_evidence_for_all_tools": true,
+  "suites": [
+    {
+      "file": "parallel-source-final.xml",
+      "tests": 1724,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "seconds": 422.119,
+      "passed": 1716,
+      "skip_reasons": [
+        "Creating symlinks is unavailable on this system.",
+        "Directory symlinks are unavailable for this user.",
+        "Linux pidfd identity evidence",
+        "POSIX symlink permission and descriptor checks",
+        "Windows configuration privacy uses directory ACLs",
+        "Windows uses directory ACLs rather than POSIX mode bits",
+        "macOS ps identity evidence"
+      ]
+    },
+    {
+      "file": "parallel-wheel-targeted-final.xml",
+      "tests": 512,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 390.596,
+      "passed": 512,
+      "skip_reasons": []
+    },
+    {
+      "file": "parallel-mcp-integrated.xml",
+      "tests": 213,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 84.014,
+      "passed": 213,
+      "skip_reasons": []
+    },
+    {
+      "file": "parallel-browser-controls.xml",
+      "tests": 196,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 372.099,
+      "passed": 196,
+      "skip_reasons": []
+    },
+    {
+      "file": "parallel-selenium-focused.xml",
+      "tests": 143,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 8.58,
+      "passed": 143,
+      "skip_reasons": []
+    },
+    {
+      "file": "parallel-selenium-launcher-final.xml",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.383,
+      "passed": 9,
+      "skip_reasons": []
+    }
+  ],
+  "suite_note": "Partitions overlap; do not add them as unique tests. The final source and installed-wheel partitions ran after all runtime changes were frozen. Nine smoke-launcher cases were added afterward and tested separately.",
+  "native_selenium_checks": 6,
+  "new_live_x_writes": 0,
+  "development_unlock_daily_cap": 20,
+  "normal_unlock_daily_cap": 5,
+  "package_consistency": {
+    "version": "3.1.0",
+    "installed_python_files_matching_source": 113,
+    "archives": [
+      {
+        "file": "x_use_mcp-3.1.0-py3-none-any.whl",
+        "members": 126,
+        "sha256": "719aa7b77ebeaf8cc1e781b5ca47703b53b5f3b5e4a4a53849004b1362ad4b4b",
+        "private_exclusions_passed": true
+      },
+      {
+        "file": "x_use_mcp-3.1.0.tar.gz",
+        "members": 207,
+        "sha256": "592815554cb96b1c5f2d47649aadeeb08c0d19b5550233a21dc2c56c120ca865",
+        "private_exclusions_passed": true
+      }
+    ],
+    "dependency_check_passed": true,
+    "dependency_packages": 93,
+    "offline_lock_check_passed": true,
+    "strict_metadata_passed": true,
+    "skill_repair_changed_files": [
+      "xuse/skills_pack/x-use/SKILL.md",
+      "x_use_mcp-3.1.0.dist-info/RECORD"
+    ]
+  },
+  "code_pushed": false,
+  "pr_opened": false,
+  "published": false
+}

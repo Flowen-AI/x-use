@@ -28,6 +28,8 @@ from helpers import (  # noqa: F401 - imported fixtures register for this module
 
 # Reads that never mutate anything, local or remote.
 READ_ONLY = {
+    "get_bookmarks", "get_conversation_controls",
+    "get_runtime_info", "preview_campaign_message",
     "get_thread", "get_thread_run",
     "list_accounts", "get_account", "get_account_health", "get_metrics", "get_account_analytics",
     "list_drafts", "get_draft", "list_queue", "list_proxies", "get_run_status",
@@ -41,6 +43,7 @@ READ_ONLY = {
 # Reads and writes that cross the network: x.com through the browser, or the
 # configured LLM. A host cannot treat any of these as replayable.
 OPEN_WORLD = {
+    "get_bookmarks", "get_conversation_controls",
     "get_account_analytics",
     "get_thread", "continue_thread",
     "search_tweets", "search_profile", "get_tweet", "prepare_reply", "test_proxy",
@@ -53,7 +56,7 @@ OPEN_WORLD = {
 }
 
 # Tools that remove existing configuration, as opposed to adding to it.
-DESTRUCTIVE = {"remove_account", "remove_proxy"}
+DESTRUCTIVE = {"remove_account", "remove_proxy", "approve_draft"}
 
 # The only two tools that can turn stored intent into a public action on X.
 PUBLISH_GATES = {"approve_draft", "process_queue", "continue_thread"}
@@ -91,8 +94,8 @@ async def test_open_world_set_is_exactly_as_declared(mcp_server):
 
 
 @pytest.mark.asyncio
-async def test_only_config_removal_is_marked_destructive(mcp_server):
-    """Posting is additive. Reserving this flag for real deletion keeps it useful."""
+async def test_config_removal_and_destructive_approval_are_declared(mcp_server):
+    """Approval can delete posts/conversations, while preparing drafts is local."""
     ann = await _annotations(mcp_server)
     actual = {name for name, a in ann.items() if a.destructiveHint}
     assert actual == DESTRUCTIVE

@@ -46,7 +46,7 @@ def fast_waits_and_no_sleeps(monkeypatch):
 
 
 ARTICLES_Q = "//article[.//a[contains(@href, '/status/')]]"
-LINKS_Q = ".//a[contains(@href, '/status/')]"
+LINKS_Q = ".//a[contains(@href, '/status/') and .//time and not(ancestor::*[@role='link'])]"
 UNRETWEET_Q = ".//button[@data-testid='unretweet']"
 RETWEET_Q = ".//button[@data-testid='retweet']"
 QUOTE_OPT_Q = "//div[@role='menuitem' and contains(., 'Quote')]"
@@ -215,7 +215,7 @@ class TestQuoteTweet:
         assert rt.retweet_or_quote(bm, tweet(), final_quote_text="great point") is True
         assert refs["post_btn"].clicks == 1
 
-    def test_quote_post_with_composer_detach_returns_true(self):
+    def test_quote_composer_detach_alone_does_not_confirm_post(self):
         bm, refs = build()
 
         def detach():
@@ -224,7 +224,7 @@ class TestQuoteTweet:
 
         self._wire_quote_ui(refs, on_post=detach)
 
-        assert rt.retweet_or_quote(bm, tweet(), final_quote_text="great point") is True
+        assert rt.retweet_or_quote(bm, tweet(), final_quote_text="great point") is False
 
     def test_quote_post_without_confirmation_returns_false(self):
         bm, refs = build()
@@ -238,3 +238,23 @@ class TestExactStatusIdMatching:
         bm, _refs = build(already_reposted=True, article_href="https://x.com/u/status/5555")
 
         assert rt.retweet_or_quote(bm, tweet("555"), final_quote_text=None) is False
+
+
+@pytest.mark.parametrize('quote', [None, 'a quote'])
+def test_failed_navigation_never_uses_previous_article(quote):
+    bm, refs = build()
+    bm.navigate_to.return_value = False
+    assert rt.retweet_or_quote(bm, tweet(), final_quote_text=quote) is False
+    assert refs['rt_icon'].clicks == 0
+
+
+@pytest.mark.parametrize('before', [True, False])
+def test_quote_needs_fresh_explicit_success_toast(before):
+    bm, refs = build()
+    if before:
+        refs['driver']._routes[ANY_TOAST_Q] = El(text='Your post was sent.')
+        on_post = lambda: None
+    else:
+        on_post = lambda: refs['driver']._routes.__setitem__(ANY_TOAST_Q, El(text='Draft saved'))
+    TestQuoteTweet()._wire_quote_ui(refs, on_post)
+    assert rt.retweet_or_quote(bm, tweet(), final_quote_text='quote') is False

@@ -12,19 +12,15 @@ from xuse.core.browser_manager import BrowserManager
 from xuse.features.scraper.parsing import find_article_with_status_id
 from xuse.models import ScrapedTweet
 
-from .reply_handler import REPLY_ANY_TOAST_XPATH, _find_error_toast
+from .reply_handler import _find_error_toast, _snapshot_toasts, _new_sent_toast
 
 logger = logging.getLogger(__name__)
 
 
-def _confirm_quote_submission(driver, quote_text_area, timeout: float = 10.0) -> bool:
-    """Wait for a post-submit confirmation signal for a quote tweet: a toast
-    appears or the quote composer detaches (textarea goes stale)."""
-    conditions = [EC.presence_of_element_located((By.XPATH, REPLY_ANY_TOAST_XPATH))]
-    if quote_text_area is not None:
-        conditions.append(EC.staleness_of(quote_text_area))
+def _confirm_quote_submission(driver, quote_text_area, timeout: float = 10.0, *, before_toasts=()) -> bool:
+    """A quote needs an explicit fresh success toast, not editor detachment."""
     try:
-        WebDriverWait(driver, timeout).until(EC.any_of(*conditions))
+        WebDriverWait(driver, timeout).until(lambda d: _new_sent_toast(d, before_toasts))
         return True
     except Exception:
         return False
@@ -47,7 +43,9 @@ def retweet_or_quote(
         logger.info(f"Quote text: '{final_quote_text[:50]}...'")
 
     try:
-        browser_manager.navigate_to(str(original_tweet.tweet_url))
+        if not browser_manager.navigate_to(str(original_tweet.tweet_url)):
+            logger.error("Repost target navigation failed; no action submitted.")
+            return False
         time.sleep(random.uniform(2.0, 3.8))
 
         # Match the article by exact status id: contains(@href, ...) would
@@ -134,6 +132,7 @@ def retweet_or_quote(
             post_button = WebDriverWait(driver, 12).until(
                 EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='tweetButton']"))
             )
+            before_toasts = _snapshot_toasts(driver)
             post_button.click()
             logger.info("Clicked 'Post' for quote tweet.")
 
@@ -144,7 +143,7 @@ def retweet_or_quote(
                     (error_toast.text or "").strip(),
                 )
                 return False
-            if not _confirm_quote_submission(driver, quote_text_area):
+            if not _confirm_quote_submission(driver, quote_text_area, before_toasts=before_toasts):
                 logger.error(
                     f"No submission confirmation for quote of tweet {original_tweet.tweet_id}; "
                     "treating the quote as failed."

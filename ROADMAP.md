@@ -24,6 +24,15 @@ separately from the current MCP runtime.
 
 ## Next priorities
 
+- Release the locally audited runtime diagnostics, campaign-member preview,
+  package-name MCP entry point and reliability fixes after platform CI. See
+  [the October audit](docs/AUDIT_2026-10-12.md) for evidence and a prioritized
+  list of proposed tools, including draft search and amendment, lead history,
+  profile snapshots. Bounded bookmarks and reviewed publishing/inbox controls
+  are now implemented locally; see [controls](docs/CONTROLS.md) for current
+  layout limits and the remaining message/group-management gaps.
+- Refresh existing MCP directory listings after releases and validate their
+  installation flows; share reproducible demonstrations and community examples.
 - Expand supported X layouts using observed DOM evidence and reproducible
   synthetic tests, including analytics dashboards available to eligible accounts.
 - Improve bounded history traversal while preserving stable message identity,

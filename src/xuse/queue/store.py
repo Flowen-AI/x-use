@@ -19,12 +19,12 @@ logger = logging.getLogger(__name__)
 
 
 class QueueJournalError(RuntimeError):
-    """An external write completed but its local final status was not saved."""
+    """An external action outcome could not be saved to the local journal."""
 
     reason = "queue_journal_failure"
 
     def __init__(self, queue_id: str, action_id: Optional[str] = None):
-        super().__init__("The action completed, but its queue outcome could not be saved. Inspect X and account safety; do not resend.")
+        super().__init__("The action outcome could not be saved to the queue. Inspect X and account safety; do not resend.")
         self.queue_id = queue_id
         self.action_id = action_id
 
@@ -85,7 +85,8 @@ class QueueStore:
     def set_status(self, queue_id: str, status: QueueStatus, *,
                    last_error: Optional[str] = None,
                    not_before: Optional[str] = None,
-                   completed_at: Optional[str] = None) -> QueuedAction:
+                   completed_at: Optional[str] = None,
+                   action_id: Optional[str] = None) -> QueuedAction:
         item = self.get(queue_id)
         candidate = item.model_copy(update={"status": status})
         if last_error is not None:
@@ -94,16 +95,22 @@ class QueueStore:
             candidate.not_before = not_before
         if completed_at is not None:
             candidate.completed_at = completed_at
+        if action_id is not None:
+            candidate.action_id = action_id
         self._append(candidate)
-        for field in ("status", "last_error", "not_before", "completed_at"):
+        for field in ("status", "last_error", "not_before", "completed_at", "action_id"):
             setattr(item, field, getattr(candidate, field))
         return item
 
-    def record_attempt(self, queue_id: str, last_error: str) -> QueuedAction:
+    def record_attempt(self, queue_id: str, last_error: str, *,
+                       action_id: Optional[str] = None) -> QueuedAction:
         item = self.get(queue_id)
         candidate = item.model_copy(update={"attempts": item.attempts + 1, "last_error": last_error})
+        if action_id is not None:
+            candidate.action_id = action_id
         self._append(candidate)
         item.attempts, item.last_error = candidate.attempts, candidate.last_error
+        item.action_id = candidate.action_id
         return item
 
     # -- queries ---------------------------------------------------------

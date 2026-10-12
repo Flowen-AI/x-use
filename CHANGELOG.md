@@ -10,19 +10,109 @@ project follows [semantic versioning](https://semver.org/). See
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-12
+
 ### Added
 
+- A transparent 0–100 operational account-health score, evidence coverage,
+  readiness blockers and criterion-level recommendations in `get_account_health`.
+  It performs local checks and does not predict X enforcement or award unverified
+  live-authentication points. [Scoring guide](docs/ACCOUNT_HEALTH.md).
+- Explicit development-only inbox unlock allowance through `XUSE_ENV=development`
+  and `XUSE_DEV_UNLOCK_DAILY_CAP`. Normal defaults remain unchanged; the durable
+  attempt ledger, challenges, pauses and pacing still apply. Account safety now
+  reports remaining daily allowances and the next UTC reset timestamp.
+- Local runtime diagnostics (`get_runtime_info`) and a pure campaign-member
+  preview (`preview_campaign_message`), bringing the inventory to
+  82 tools together with the controls below, up from 70 in 3.0.0.
+- Ten publishing/account/inbox controls: bounded bookmark reads, reviewed
+  bookmark add/remove, unlike, undo repost, unfollow, own-post edit/delete,
+  visible conversation capabilities and request/notification/deletion drafts.
+  [Scope and limitations](docs/CONTROLS.md) distinguish fixture validation from
+  live X support; every new mutation always requires draft approval.
+- Per-tool MCP functional tracing for passing tests without recording arguments
+  or private result bodies. Combined with the stdio audit, it tracks positive
+  evidence separately from schema/error checks for every registered tool.
+- A package-name `x-use-mcp` console entry point that starts MCP directly for
+  registry/uvx clients; the existing `x-use mcp` command remains available.
+- A credential-free full stdio audit for every tool, all prompts/resources and
+  restart persistence, also run against the installed wheel in CI.
+- Task-oriented documentation, workflow examples, reusable brand assets,
+  contribution forms and clearer installation and capability descriptions.
 - Guarded manual release recovery runs corrected CI fixtures while building the
   original published tag. Runtime and packaging differences are rejected, and
   the full cross-platform verification remains required before publication.
 
 ### Fixed
 
+- Account changes cancel older cold starts and invalidate queued acquisitions
+  before they can publish stale sessions. Invalid account requests no longer
+  evict a healthy context before credential, proxy and ownership checks.
+- Proxy resolution rejects broken pools, missing environment values and malformed
+  routes without silently using a direct connection. Selenium rejects unsupported
+  proxy authentication and routing overrides; probes use the configured backend
+  with a separate cookieless browser.
+- Account cookie imports follow the selected configuration directory instead of
+  a global destination; relative-path diagnostics and inline-source precedence
+  match startup. Duplicate account IDs are rejected before saving, and validation
+  errors identify invalid fields without echoing credential values.
+- Patchright/Playwright idle cleanup retires the browser and driver after the last
+  context, including failed authentication startup. Teardown is serialized with
+  fresh startup; process ownership is retained until exit is verified. Windows
+  cleanup checks pinned process handles as well as empty Job accounting.
+- Session diagnostics report lifecycle and transport evidence without claiming a
+  fresh login check. Async account health uses the same strict cookie loader and
+  path resolution as startup. Lock I/O errors are no longer reported as contention.
+- Cookie import accepts cookies-only storage-state envelopes, rejects duplicate
+  JSON keys, conflicting expiry and unsupported partition metadata, and saves
+  normalized arrays atomically with rollback. Serialized size is checked before
+  replacement, and malformed config errors cannot echo inline credentials.
+- Queued browser actions retain their queue and action IDs in the durable ledger
+  before execution. Recovery repairs queue history after interruption without
+  automatically resending; cancellation and journal errors preserve recovery
+  metadata. Queue pacing rechecks account state and duplicate work before execution.
+- Draft approval uses explicit confirmed-duplicate evidence instead of guessing
+  success from words in an error message.
+- Inbox menus are dismissed after supported failures without hiding the original
+  error. Disabled or ambiguous notification controls are rejected, and an already
+  applied mute/unmute state is reported without another click.
+- Selenium closes partially initialized browsers, verifies the X cookie origin,
+  and avoids logging driver errors that can echo cookies. Publishing rejects
+  incomplete media preparation and stale or unrelated success evidence.
+- Runtime diagnostics report configured async/Selenium workflow support and
+  effective unlock policy without reading account journals or starting a browser.
+- Inbox controls recognize the current Conversation info route and its bound
+  More popover, preserve numeric conversation references through draft approval,
+  wait for participant headers to hydrate, and close the info sheet after
+  inspection or notification changes. Unsupported modern deletion is reported
+  explicitly. A reviewed live mute/unmute cycle restored the original state.
+- Bookmarks now recognize the observed `/i/history` redirect and verify the
+  selected Bookmarks tab throughout collection. Likes/history cannot be silently
+  substituted for the requested feed.
+- Draft approval advertises destructive behavior for post edits/deletions and
+  conversation deletions. Stale reviewed text and mismatched identities stop
+  before final submission; unconfirmed writes remain uncertain.
+- Conversation identity parsing no longer concatenates inline button text into
+  a username. Request acceptance can confirm a move to the main inbox only when
+  the observed conversation ID and participants remain unchanged.
+
+- Media-only post reads, delayed target hydration and profile connection cells
+  containing other handles in their biographies now preserve exact identity.
+- Missing public engagement counters remain unknown instead of becoming zero;
+  inline cookie health uses strict content validation.
+- Explicitly rejected campaign drafts release cross-campaign reservations;
+  missing or uncertain draft outcomes remain blocked.
+- Concurrent stdio servers sharing one data home fail before loading cached
+  draft/queue state; operating-system ownership releases on process exit.
+- Shared README links resolve correctly from PyPI, package metadata includes
+  project URLs, and capability claims distinguish defaults and execution paths.
 - Cancellation tests arm their deadline after the intended execution phase is
   observed, so slow initial storage cannot be mistaken for cancellation after
   a confirmed send. This changes CI fixtures only.
 - The PIN privacy test uses deterministic unique fixture IDs, preventing random
   identifier collisions with its synthetic PIN from reporting a false leak.
+- The subprocess ownership test allows 30 seconds for cold interpreter startup
+  on busy Windows development hosts; its lock and release assertions are unchanged.
 
 ## [3.0.0] - 2026-10-09
 
@@ -417,6 +507,8 @@ CLI.
 
 - `python src/main.py` still works, with a warning pointing to `x-use run`.
 
+[Unreleased]: https://github.com/ihuzaifashoukat/x-use/compare/v3.0.0...HEAD
+[3.1.0]: https://github.com/ihuzaifashoukat/x-use/compare/v3.0.0...HEAD
 [3.0.0]: https://github.com/ihuzaifashoukat/x-use/compare/v2.4.1...v3.0.0
 [2.4.1]: https://github.com/ihuzaifashoukat/x-use/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/ihuzaifashoukat/x-use/compare/v2.3.1...v2.4.0
