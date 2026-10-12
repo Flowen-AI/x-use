@@ -370,12 +370,48 @@ async def test_running_send_cannot_be_reconciled_until_it_finishes(async_server)
 
 
 @pytest.mark.asyncio
-async def test_send_timeout_preserves_action_id_and_prevents_retry(async_server):
+@pytest.mark.parametrize("reserve_delay", [0, 1.25],
+                         ids=["immediate-reservation", "reservation-longer-than-deadline"])
+async def test_send_timeout_preserves_action_id_and_prevents_retry(async_server, monkeypatch, reserve_delay):
     ctx = async_server.xuse_ctx
     ctx.config_loader.settings.setdefault("mcp", {})["tool_timeout_seconds"] = 1
-    cancelled = asyncio.Event()
+    entered, cancelled = asyncio.Event(), asyncio.Event()
+
+    if reserve_delay:
+        original_reserve = ctx.safety_store.reserve
+
+        def delayed_reserve(*args, **kwargs):
+            # Prove that storage latency cannot move this send-phase assertion
+            # into reservation cancellation, which has separate coverage below.
+            threading.Event().wait(reserve_delay)
+            return original_reserve(*args, **kwargs)
+
+        monkeypatch.setattr(ctx.safety_store, "reserve", delayed_reserve)
+
+    original_wait = asyncio.wait
+
+    async def send_deadline_wait(tasks, *, timeout=None, return_when=asyncio.ALL_COMPLETED):
+        if timeout == 1:
+            phase_waiter = asyncio.create_task(entered.wait())
+            try:
+                done, _ = await original_wait(
+                    set(tasks) | {phase_waiter}, timeout=STORAGE_WAIT_SECONDS,
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+                assert done, "Tool did not reach the send cancellation phase"
+                if phase_waiter not in done:
+                    return await original_wait(tasks, timeout=0, return_when=return_when)
+            finally:
+                phase_waiter.cancel()
+                await asyncio.gather(phase_waiter, return_exceptions=True)
+        # Keep the real deadline and production cancellation/drain behavior;
+        # only its fixture phase changes, not the timeout result or cleanup.
+        return await original_wait(tasks, timeout=timeout, return_when=return_when)
+
+    monkeypatch.setattr(asyncio, "wait", send_deadline_wait)
 
     async def hanging_send(recipient, text):
+        entered.set()
         try:
             await asyncio.Event().wait()
         finally:
@@ -385,6 +421,7 @@ async def test_send_timeout_preserves_action_id_and_prevents_retry(async_server)
     draft = await call_tool(async_server, "send_message", {"account": "acc1", "recipient": "@alex", "text": "reviewed"})
     result = await call_tool(async_server, "approve_draft", {"draft_id": draft["draft_id"]})
     assert not result["ok"] and result["error"]["reason"] == "tool_timeout"
+    assert entered.is_set()
     assert cancelled.is_set()
     action = ctx.safety_store.status("acc1")["recent_actions"][0]
     assert result["error"]["action_id"] == action["action_id"]
