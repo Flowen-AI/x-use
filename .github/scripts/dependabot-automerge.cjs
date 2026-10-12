@@ -69,7 +69,7 @@ function scalar(value) {
 }
 function signedDependencies(message) {
   // Intentionally accept only Dependabot's simple scalar trailer, not general
-  // YAML. Future formats, aliases, duplicate keys and inferred types fail closed.
+  // YAML. Future formats, aliases and duplicate keys fail closed.
   if (typeof message !== 'string' || message.length > 524288) reject('Invalid commit metadata.');
   const fragments = [...message.replaceAll('\r\n', '\n').matchAll(/^---\n([\s\S]*?)\n\.\.\.(?:\n|$)/gm)];
   if (fragments.length !== 1) reject('Expected one signed dependency trailer.');
@@ -91,6 +91,34 @@ function signedDependencies(message) {
   if (entries.length === 0 || entries.length > 250) reject('Invalid signed dependency count.');
   return entries;
 }
+function dockerSignedUpdateType(item, signed, entries, message) {
+  // Docker updates can omit update-type. Bind the fallback to the immutable
+  // signed version line, never a mutable PR title/body or the aggregate output.
+  if (entries.filter(entry => entry['dependency-name'] === item.dependencyName).length !== 1) {
+    reject('Repeated Docker dependency requires manual review.');
+  }
+  const lines = [...message.replaceAll('\r\n', '\n').matchAll(/^Updates `([A-Za-z0-9_.:/@+-]+)` from (\S+) to (\S+)$/gm)]
+    .filter(match => match[1] === item.dependencyName);
+  if (lines.length !== 1 || lines[0][2] !== item.prevVersion || lines[0][3] !== item.newVersion ||
+      signed['dependency-version'] !== item.newVersion) reject('Docker version transition is not bound to signed metadata.');
+  // Only bare numeric tags and this project's current slim-bookworm variant
+  // have a known stable interpretation here. Unknown suffixes might denote
+  // prereleases, so do not guess from a denylist of prerelease names.
+  const version = /^(v?)(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:\.(0|[1-9][0-9]*))?(-[a-z][a-z0-9.-]*)?$/;
+  const before = item.prevVersion.match(version);
+  const after = item.newVersion.match(version);
+  if (!before || !after || before[1] !== after[1] || before[5] !== after[5] ||
+      (before[4] === undefined) !== (after[4] === undefined) ||
+      !['', '-slim-bookworm'].includes(before[5] ?? '')) {
+    reject('Ambiguous Docker version or variant requires manual review.');
+  }
+  const oldNumbers = before.slice(2, 5).map(value => BigInt(value ?? '0'));
+  const newNumbers = after.slice(2, 5).map(value => BigInt(value ?? '0'));
+  if (oldNumbers[0] !== newNumbers[0]) reject('Docker major updates require manual review.');
+  if (newNumbers[1] > oldNumbers[1]) return MINOR;
+  if (newNumbers[1] === oldNumbers[1] && newNumbers[2] > oldNumbers[2]) return PATCH;
+  reject('Docker update is not an increasing patch or minor version.');
+}
 function checkMetadata(raw, aggregate, ecosystem, message) {
   if (typeof raw !== 'string' || raw.length > 524288) reject('Invalid metadata output.');
   let entries;
@@ -103,8 +131,10 @@ function checkMetadata(raw, aggregate, ecosystem, message) {
     if (!item || typeof item !== 'object' || Array.isArray(item) ||
         ![PATCH, MINOR].includes(item.updateType) || item.packageEcosystem !== ecosystem ||
         item.directory !== '/' || item.targetBranch !== 'main' || item.maintainerChanges !== false ||
-        item.dependencyName !== signed[i]['dependency-name'] ||
-        item.updateType !== signed[i]['update-type']) reject('Every signed dependency must be a root patch or minor update.');
+        item.dependencyName !== signed[i]['dependency-name']) reject('Every signed dependency must be a root patch or minor update.');
+    const signedType = signed[i]['update-type'] ?? (ecosystem === 'docker'
+      ? dockerSignedUpdateType(item, signed[i], signed, message) : undefined);
+    if (item.updateType !== signedType) reject('Update type does not match the signed dependency evidence.');
   }
   const highest = entries.some(item => item.updateType === MINOR) ? MINOR : PATCH;
   if (aggregate !== highest) reject('Aggregate update type does not match every dependency.');
