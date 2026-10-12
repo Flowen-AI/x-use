@@ -1,0 +1,94 @@
+{
+  "version": "3.1.0",
+  "tool_count": 82,
+  "stdio_calls": 172,
+  "positive_stdio_tools": 54,
+  "positive_wrapper_tools": 75,
+  "all_tools_have_positive_evidence": true,
+  "partitions": [
+    {
+      "partition": "Combined source suite",
+      "tests": 2076,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "seconds": 289.274,
+      "passed": 2068,
+      "skip_reasons": [
+        "Creating symlinks is unavailable on this system.",
+        "Directory symlinks are unavailable for this user.",
+        "Linux pidfd identity evidence",
+        "POSIX symlink permission and descriptor checks",
+        "Windows configuration privacy uses directory ACLs",
+        "Windows uses directory ACLs rather than POSIX mode bits",
+        "macOS ps identity evidence"
+      ]
+    },
+    {
+      "partition": "Installed-wheel affected paths and native browsers",
+      "tests": 686,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "seconds": 63.313,
+      "passed": 682,
+      "skip_reasons": [
+        "Linux pidfd identity evidence",
+        "POSIX symlink permission and descriptor checks",
+        "Windows uses directory ACLs rather than POSIX mode bits"
+      ]
+    },
+    {
+      "partition": "Native multi-account lifecycle regression",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 154.165,
+      "passed": 10,
+      "skip_reasons": []
+    },
+    {
+      "partition": "Account health scoring and diagnostics",
+      "tests": 90,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 123.968,
+      "passed": 90,
+      "skip_reasons": []
+    },
+    {
+      "partition": "Proxy cleanup regression",
+      "tests": 53,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 79.165,
+      "passed": 53,
+      "skip_reasons": []
+    }
+  ],
+  "partition_note": "Partitions overlap; not a count of unique or live X scenarios.",
+  "verification_order": "The combined source suite, installed-wheel suite and package checks ran sequentially after runtime changes were frozen.",
+  "source_and_installed_python_files_matching": 114,
+  "archives": [
+    {
+      "name": "x_use_mcp-3.1.0-py3-none-any.whl",
+      "members": 127,
+      "sha256": "022c2aa875025c80631d0e079d2cad8dc1d3cfda960fc217c30b1fa280a76fb7"
+    },
+    {
+      "name": "x_use_mcp-3.1.0.tar.gz",
+      "members": 208,
+      "sha256": "fad267c72f7f79e623c2b306351462102da5867b393017e5e85bc8c885a45dc2"
+    }
+  ],
+  "strict_metadata_check_passed": true,
+  "dependency_check_packages": 93,
+  "offline_lock_consistency_passed": true,
+  "private_package_exclusions_passed": true,
+  "live_x_mutations": 0,
+  "pushed": false,
+  "released": false
+}

@@ -1,0 +1,65 @@
+{
+  "tool_count": 82,
+  "all_tools_called_over_stdio": true,
+  "stdio_call_count": 172,
+  "successful_stdio_tools": 54,
+  "all_tools_have_positive_wrapper_or_stdio_evidence": true,
+  "functional_wrapper_success_tools": 75,
+  "positive_functional_wrapper_calls": 372,
+  "suites": [
+    {
+      "suite": "controls-source-final.xml",
+      "tests": 1603,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "seconds": 458.269,
+      "passed": 1595,
+      "skip_reasons": [
+        "Creating symlinks is unavailable on this system.",
+        "Directory symlinks are unavailable for this user.",
+        "Linux pidfd identity evidence",
+        "POSIX symlink permission and descriptor checks",
+        "Windows configuration privacy uses directory ACLs",
+        "Windows uses directory ACLs rather than POSIX mode bits",
+        "macOS ps identity evidence"
+      ]
+    },
+    {
+      "suite": "controls-wheel-native.xml",
+      "tests": 857,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "seconds": 1190.359,
+      "passed": 856,
+      "skip_reasons": [
+        "Linux pidfd identity evidence"
+      ]
+    },
+    {
+      "suite": "controls-wheel-final-targeted.xml",
+      "tests": 204,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 193.604,
+      "passed": 204,
+      "skip_reasons": []
+    }
+  ],
+  "note": "Partitions overlap; do not sum as unique tests. Broad wheel suite preceded the final request-route and edit-identity refinements; final installed-wheel targeted suite covers those changes.",
+  "wheel_sha256": "4e144632569c3c5fd84a756e4d04027a9a1745e7a47f84eb692f725a8d048f34",
+  "installed_python_files_matching_source": 113,
+  "installed_dependency_consistency": {
+    "packages": 93,
+    "passed": true
+  },
+  "new_live_external_writes": 0,
+  "new_live_bookmarks_read": {
+    "passed": true,
+    "count": 2
+  },
+  "live_inbox_retest": "blocked by configured daily unlock budget; retained unchanged",
+  "code_pushed": false
+}

@@ -1,0 +1,86 @@
+{
+  "version": "3.1.0",
+  "release_status": "unpublished preparation",
+  "tool_count": 82,
+  "all_tools_called_over_stdio": true,
+  "stdio_call_count": 172,
+  "successful_stdio_tools": 54,
+  "all_tools_have_positive_wrapper_or_stdio_evidence": true,
+  "functional_wrapper_success_tools": 75,
+  "positive_functional_wrapper_calls": 372,
+  "suites": [
+    {
+      "suite": "release310-source-final.xml",
+      "tests": 1625,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 8,
+      "seconds": 372.947,
+      "passed": 1617,
+      "skip_reasons": [
+        "Creating symlinks is unavailable on this system.",
+        "Directory symlinks are unavailable for this user.",
+        "Linux pidfd identity evidence",
+        "POSIX symlink permission and descriptor checks",
+        "Windows configuration privacy uses directory ACLs",
+        "Windows uses directory ACLs rather than POSIX mode bits",
+        "macOS ps identity evidence"
+      ]
+    },
+    {
+      "suite": "release310-wheel-native.xml",
+      "tests": 875,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "seconds": 767.725,
+      "passed": 874,
+      "skip_reasons": [
+        "Linux pidfd identity evidence"
+      ]
+    },
+    {
+      "suite": "release310-wheel-final-targeted.xml",
+      "tests": 300,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 131.889,
+      "passed": 300,
+      "skip_reasons": []
+    }
+  ],
+  "partition_note": "Partitions overlap; do not sum as unique tests. Source and broad wheel runs preceded final native-reference and info-sheet cleanup fixes. The final installed-wheel targeted suite covers both changed runtime files and all control fixtures.",
+  "wheel_sha256": "bac66100fde89c717f0b38d9e277bd0d64badbedc9212e746edafab2adb072a0",
+  "package_consistency": {
+    "version": "3.1.0",
+    "editable": false,
+    "matching_python_files": 113,
+    "dependency_consistency_packages": 93,
+    "dependency_consistency_passed": true,
+    "strict_distribution_metadata_passed": true,
+    "offline_lock_check_passed": true,
+    "archives": [
+      {
+        "name": "x_use_mcp-3.1.0-py3-none-any.whl",
+        "members": 126,
+        "private_note_exclusions_passed": true
+      },
+      {
+        "name": "x_use_mcp-3.1.0.tar.gz",
+        "members": 205,
+        "private_note_exclusions_passed": true
+      }
+    ]
+  },
+  "local_development_unlock_daily_cap": 20,
+  "normal_unlock_default": 5,
+  "attempt_history_reset": false,
+  "pin_saved_in_registration": false,
+  "new_live_external_writes": 2,
+  "live_notification_state_restored": true,
+  "new_live_messages_or_publications": 0,
+  "code_pushed": false,
+  "pull_request_created": false,
+  "package_published": false
+}

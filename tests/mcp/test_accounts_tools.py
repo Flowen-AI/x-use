@@ -48,10 +48,12 @@ def cookie_export(tmp_path):
 
 
 @pytest.fixture
-def isolated_config_dir(tmp_path, monkeypatch):
+def isolated_config_dir(tmp_path, monkeypatch, config_loader):
     """Keep cookie copies and path resolution inside tmp_path."""
     config_dir = tmp_path / "config"
     config_dir.mkdir()
+    (config_dir / "accounts.json").write_text(Path(config_loader.accounts_file).read_text(encoding="utf-8"), encoding="utf-8")
+    config_loader.accounts_file = config_dir / "accounts.json"
     monkeypatch.setattr("xuse.mcp.accounts_tools.CONFIG_DIR", config_dir)
     monkeypatch.setattr("xuse.mcp.accounts_tools.PROJECT_ROOT", tmp_path)
     return config_dir

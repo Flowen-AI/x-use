@@ -92,7 +92,7 @@ class FakeDriver(FakeElement):
 
 
 ARTICLES_Q = "//article[.//a[contains(@href, '/status/')]]"
-LINKS_Q = ".//a[contains(@href, '/status/')]"
+LINKS_Q = ".//a[contains(@href, '/status/') and .//time and not(ancestor::*[@role='link'])]"
 UNLIKE_Q = './/button[@data-testid="unlike"]'
 LIKE_Q = './/button[@data-testid="like"]'
 
@@ -135,6 +135,14 @@ async def test_httpurl_is_coerced_to_str_before_navigation():
     (called_url,), _ = bm.navigate_to.call_args
     assert isinstance(called_url, str)
     assert called_url == "https://x.com/u/status/123"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('current_url', ['https://x.com/u/status/1234', 'https://x.com/search?q=123'])
+async def test_like_navigation_does_not_confuse_substring_for_target(current_url):
+    engagement, bm, _driver = make_engagement(navigate_result=False, current_url=current_url)
+    assert await engagement.like_tweet('123', 'https://x.com/u/status/123') is False
+    bm.navigate_to.assert_called_once_with('https://x.com/u/status/123')
 
 
 @pytest.mark.asyncio

@@ -5,7 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
+from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException, StaleElementReferenceException
 
 from xuse.core.browser_manager import BrowserManager
 from xuse.features.scraper.parsing import find_article_with_status_id
@@ -22,6 +22,32 @@ REPLY_ERROR_TOAST_XPATH = (
 )
 REPLY_ANY_TOAST_XPATH = "//div[@data-testid='toast']"
 
+_SENT_TOAST_TEXTS = {"your post was sent", "your reply was sent", "your tweet was sent"}
+
+
+def _toast_key(element):
+    return getattr(element, 'id', None) or id(element)
+
+
+def _snapshot_toasts(driver):
+    """Capture node identities so an old success notification is not reused."""
+    return {_toast_key(el) for el in driver.find_elements(By.XPATH, REPLY_ANY_TOAST_XPATH)}
+
+
+def _new_sent_toast(driver, before_toasts):
+    for element in driver.find_elements(By.XPATH, REPLY_ANY_TOAST_XPATH):
+        try:
+            if _toast_key(element) in before_toasts or not element.is_displayed():
+                continue
+            text = ' '.join((element.text or '').casefold().split())
+            # X can append a View action on another line. Arbitrary toasts
+            # (upload errors, drafts, copied links) never prove publication.
+            if any(text in {sent, sent + '.', sent + ' view', sent + '. view'} for sent in _SENT_TOAST_TEXTS):
+                return element
+        except StaleElementReferenceException:
+            continue
+    return False
+
 
 def _find_error_toast(driver, timeout: float = 3.0):
     """Return the platform error toast element if one appears, else None."""
@@ -33,24 +59,14 @@ def _find_error_toast(driver, timeout: float = 3.0):
         return None
 
 
-def _confirm_reply_submission(driver, dialog, textarea, timeout: float = 10.0) -> bool:
-    """Wait for a post-submit confirmation signal.
+def _confirm_reply_submission(driver, dialog, textarea, timeout: float = 10.0, *, before_toasts=()) -> bool:
+    """Require a fresh explicit success toast; DOM detachment is not proof.
 
-    Modal path: the dialog detaches. Inline path (no dialog): a toast appears
-    or the composer textarea detaches (re-render after a successful post).
-    A reply that produced no signal is treated as not submitted.
+    Re-rendering, closing a draft, or navigating away all detach an editor
+    without publishing it. Keep the editor arguments for caller compatibility.
     """
-    if dialog is not None:
-        try:
-            WebDriverWait(driver, timeout).until(EC.staleness_of(dialog))
-            return True
-        except Exception:
-            return False
-    conditions = [EC.presence_of_element_located((By.XPATH, REPLY_ANY_TOAST_XPATH))]
-    if textarea is not None:
-        conditions.append(EC.staleness_of(textarea))
     try:
-        WebDriverWait(driver, timeout).until(EC.any_of(*conditions))
+        WebDriverWait(driver, timeout).until(lambda d: _new_sent_toast(d, before_toasts))
         return True
     except Exception:
         return False
@@ -72,7 +88,9 @@ def reply_to_tweet(browser_manager: BrowserManager, original_tweet: ScrapedTweet
     )
 
     try:
-        browser_manager.navigate_to(str(original_tweet.tweet_url))
+        if not browser_manager.navigate_to(str(original_tweet.tweet_url)):
+            logger.error("Reply target navigation failed; no reply submitted.")
+            return False
         time.sleep(3)
 
         # Match the article by exact status id: contains(@href, ...) would
@@ -166,6 +184,7 @@ def reply_to_tweet(browser_manager: BrowserManager, original_tweet: ScrapedTweet
         if not reply_post_button:
             # As a fallback, attempt Ctrl+Enter to submit
             logger.warning("Reply button still disabled; attempting Ctrl+Enter fallback.")
+            before_toasts = _snapshot_toasts(driver)
             try:
                 reply_text_area.send_keys(Keys.CONTROL, Keys.ENTER)
             except Exception as e:
@@ -182,7 +201,7 @@ def reply_to_tweet(browser_manager: BrowserManager, original_tweet: ScrapedTweet
 
             # Never claim success without a confirmation signal, whether or
             # not a modal dialog was detected (inline composer path).
-            if not _confirm_reply_submission(driver, dialog, reply_text_area):
+            if not _confirm_reply_submission(driver, dialog, reply_text_area, before_toasts=before_toasts):
                 logger.error(
                     f"Ctrl+Enter fallback produced no submission confirmation for tweet "
                     f"{original_tweet.tweet_id}; treating the reply as failed."
@@ -191,6 +210,7 @@ def reply_to_tweet(browser_manager: BrowserManager, original_tweet: ScrapedTweet
             return True
 
         # Click the enabled Reply button with fallbacks
+        before_toasts = _snapshot_toasts(driver)
         try:
             try:
                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", reply_post_button)
@@ -223,7 +243,7 @@ def reply_to_tweet(browser_manager: BrowserManager, original_tweet: ScrapedTweet
 
         # Require a confirmation signal: dialog detach, toast, or composer
         # re-render. No signal means we cannot claim the reply was posted.
-        if not _confirm_reply_submission(driver, dialog, reply_text_area):
+        if not _confirm_reply_submission(driver, dialog, reply_text_area, before_toasts=before_toasts):
             logger.error(
                 f"No submission confirmation for reply to tweet {original_tweet.tweet_id}; "
                 "treating the reply as failed."

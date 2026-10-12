@@ -136,11 +136,11 @@ def test_post_confirmed_by_toast_returns_true():
     assert refs["post_btn"].clicks == 1
 
 
-def test_post_confirmed_by_composer_detach_returns_true():
+def test_composer_detach_alone_does_not_confirm_post():
     bm, refs = build_world()
     refs["post_btn"]._on_click = lambda: setattr(refs["textarea"], "stale", True)
 
-    assert comp.post_new_tweet(bm, AccountConfig(account_id="a"), "hello world", []) is True
+    assert comp.post_new_tweet(bm, AccountConfig(account_id="a"), "hello world", []) is False
 
 
 def test_post_without_confirmation_returns_false(caplog):
@@ -165,3 +165,65 @@ def test_platform_error_toast_returns_false(caplog):
 
     assert result is False
     assert any("already said that" in r.getMessage() for r in caplog.records)
+
+
+@pytest.mark.parametrize('text', ['Draft saved', 'Link copied', 'You cannot post right now', 'Your post was sent to drafts'])
+def test_unrelated_or_rejection_toasts_do_not_confirm_publication(text):
+    bm, refs = build_world()
+    refs['post_btn']._on_click = lambda: refs['driver']._routes.__setitem__(ANY_TOAST_Q, El(text=text))
+    assert comp.post_new_tweet(bm, AccountConfig(account_id='a'), 'hello', []) is False
+    assert refs['post_btn'].clicks == 1
+
+
+def test_preexisting_success_toast_is_not_reused():
+    bm, refs = build_world()
+    refs['driver']._routes[ANY_TOAST_Q] = El(text='Your post was sent.')
+    assert comp.post_new_tweet(bm, AccountConfig(account_id='a'), 'hello', []) is False
+
+
+def test_requested_media_missing_input_never_posts_text_only(tmp_path):
+    media = tmp_path / 'test.png'
+    media.write_bytes(b'synthetic')
+    bm, refs = build_world()
+    assert comp.post_new_tweet(bm, AccountConfig(account_id='a'), 'hello', [str(media)]) is False
+    assert refs['post_btn'].clicks == 0
+
+
+def test_requested_media_not_ready_never_clicks_post(tmp_path):
+    media = tmp_path / 'test.png'
+    media.write_bytes(b'synthetic')
+    bm, refs = build_world()
+    upload = El()
+    refs['layers']._routes["//input[@data-testid='fileInput' and @type='file']"] = upload
+    assert comp.post_new_tweet(bm, AccountConfig(account_id='a'), 'hello', [str(media)]) is False
+    assert len(upload.keys) == 1
+    assert refs['post_btn'].clicks == 0
+
+
+def test_ready_media_preserves_all_requested_attachments(tmp_path):
+    media = [tmp_path / f'test{i}.png' for i in range(2)]
+    for path in media:
+        path.write_bytes(b'synthetic')
+    bm, refs = build_world()
+    upload = El()
+    refs['layers']._routes["//input[@data-testid='fileInput' and @type='file']"] = upload
+    refs['driver']._routes["//button[@data-testid='tweetButton']"] = refs['post_btn']
+    refs['post_btn']._on_click = lambda: refs['driver']._routes.__setitem__(ANY_TOAST_Q, El(text='Your post was sent.'))
+    assert comp.post_new_tweet(bm, AccountConfig(account_id='a'), 'hello', [str(p) for p in media]) is True
+    assert upload.keys == [('\n'.join(str(p.resolve()) for p in media),)]
+    assert refs['post_btn'].clicks == 1
+
+
+@pytest.mark.parametrize('names', [
+    ['missing.png'], ['one.png', 'two.mp4'], ['one.mp4', 'two.mp4'],
+    ['one.txt'], ['one.gif', 'two.png'], [f'{i}.png' for i in range(5)],
+])
+def test_invalid_media_set_is_rejected_before_browser_start(tmp_path, names):
+    paths = [tmp_path / name for name in names]
+    for path in paths:
+        if path.name != 'missing.png':
+            path.write_bytes(b'synthetic')
+    bm, refs = build_world()
+    assert comp.post_new_tweet(bm, AccountConfig(account_id='a'), 'hello', [str(p) for p in paths]) is False
+    bm.get_driver.assert_not_called()
+    assert refs['post_btn'].clicks == 0

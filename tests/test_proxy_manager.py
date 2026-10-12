@@ -57,16 +57,18 @@ class TestDirectProxies:
             == "socks5://host.internal:1080"
         )
 
-    def test_unset_env_var_interpolates_to_empty_string(self, make_proxy_manager, monkeypatch):
+    def test_unset_env_var_fails_closed(self, make_proxy_manager, monkeypatch):
         monkeypatch.delenv("XUSE_TEST_UNSET_VAR", raising=False)
         manager = make_proxy_manager()
-        assert manager.resolve("http://${XUSE_TEST_UNSET_VAR}:1") == "http://:1"
+        with pytest.raises(ValueError, match="missing or empty"):
+            manager.resolve("http://${XUSE_TEST_UNSET_VAR}:1")
 
 
 class TestHashStrategy:
-    def test_unknown_pool_resolves_to_none(self, make_proxy_manager):
+    def test_unknown_pool_fails_closed(self, make_proxy_manager):
         manager = make_proxy_manager()
-        assert manager.resolve("pool:does_not_exist", account_id="acct") is None
+        with pytest.raises(ValueError, match="missing, empty or malformed"):
+            manager.resolve("pool:does_not_exist", account_id="acct")
 
     def test_same_account_gets_same_proxy_within_process(self, make_proxy_manager):
         manager = make_proxy_manager()

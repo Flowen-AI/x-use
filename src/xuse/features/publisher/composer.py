@@ -1,6 +1,7 @@
 import logging
 import time
 import random
+from pathlib import Path
 from typing import List
 
 from selenium.webdriver.common.by import By
@@ -13,7 +14,7 @@ from xuse.core.browser_manager import BrowserManager
 from xuse.models import AccountConfig
 from xuse.utils.selenium_waits import wait_for_any_present
 from .audience_selector import select_community_if_configured
-from .reply_handler import REPLY_ANY_TOAST_XPATH
+from .reply_handler import _snapshot_toasts, _new_sent_toast
 
 logger = logging.getLogger(__name__)
 
@@ -32,34 +33,26 @@ def post_new_tweet(
     tweet_text: str,
     final_media_paths: List[str],
 ) -> bool:
-    # X constraints: up to 4 images OR 1 video; don't mix types.
-    def _filter_media_paths_for_x(paths: List[str]) -> List[str]:
-        if not paths:
-            return []
-        imgs_ext = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
-        vids_ext = {".mp4", ".mov", ".m4v", ".webm"}
-        images, videos, others = [], [], []
-        for p in paths:
-            try:
-                ext = (p.rsplit(".", 1)[-1] if "." in p else "").lower()
-                ext = f".{ext}" if ext else ""
-            except Exception:
-                ext = ""
-            if ext in imgs_ext:
-                images.append(p)
-            elif ext in vids_ext:
-                videos.append(p)
-            else:
-                others.append(p)
-        # Prefer video alone if present; otherwise up to 4 images
-        if videos:
-            return [videos[0]]
-        if images:
-            return images[:4]
-        # Fallback: allow first file if type unknown
-        return others[:1]
-
-    final_media_paths = _filter_media_paths_for_x(list(final_media_paths or []))
+    # Preserve the requested attachment set. Silently dropping a fifth image,
+    # a failed upload, or an image beside a video publishes different content.
+    try:
+        media = [Path(path).resolve() for path in (final_media_paths or [])]
+        images = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+        videos = {".mp4", ".mov", ".m4v", ".webm"}
+        extensions = [path.suffix.lower() for path in media]
+        invalid_media = (
+            any(not path.is_file() for path in media)
+            or any(ext not in images | videos for ext in extensions)
+            or len(media) > 4
+            or (any(ext in videos for ext in extensions) and len(media) != 1)
+            or ('.gif' in extensions and len(media) != 1)
+        )
+    except (TypeError, ValueError, OSError):
+        invalid_media = True
+    if invalid_media:
+        logger.error("Requested media is missing or unsupported; no post submitted.")
+        return False
+    final_media_paths = [str(path) for path in media]
     driver = browser_manager.get_driver()
     logger.info(
         f"Attempting to post tweet: '{(tweet_text or '')[:50]}...' with {len(final_media_paths)} media file(s)."
@@ -183,10 +176,12 @@ def post_new_tweet(
                     WebDriverWait(driver, 30).until(lambda d: _tweet_button_ready(d))
                     logger.info("Media upload appears complete; Tweet button enabled.")
                 except TimeoutException:
-                    logger.warning("Tweet button did not enable after media upload wait; proceeding anyway.")
+                    logger.error("Media upload readiness was not confirmed; no post submitted.")
+                    return False
                 time.sleep(random.uniform(1.0, 2.0))
             else:
-                logger.warning("File input not found; skipping media upload.")
+                logger.error("Requested media input was not found; no post submitted.")
+                return False
 
         # Now click Post button
         post_button_xpath = "//button[@data-testid='tweetButton']"
@@ -207,6 +202,7 @@ def post_new_tweet(
                 EC.element_to_be_clickable((By.XPATH, post_button_xpath))
             )
 
+        before_toasts = _snapshot_toasts(driver)
         try:
             try:
                 driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", post_button)
@@ -243,19 +239,15 @@ def post_new_tweet(
             )
             return False
 
-        # ...otherwise watch for a state flip (same idiom as the like flow):
-        # a toast appears or the composer textarea detaches as the composer
-        # closes. No signal means no evidence the tweet was posted.
+        # A fresh explicit success toast is evidence; a stale editor alone can
+        # also be caused by an unrelated re-render or abandoned draft.
         try:
             WebDriverWait(driver, 10).until(
-                EC.any_of(
-                    EC.presence_of_element_located((By.XPATH, REPLY_ANY_TOAST_XPATH)),
-                    EC.staleness_of(text_area),
-                )
+                lambda d: _new_sent_toast(d, before_toasts)
             )
         except Exception:
             logger.error(
-                "No post confirmation observed (no toast and the composer stayed open); "
+                "No explicit post confirmation observed; "
                 "treating the post as failed."
             )
             return False

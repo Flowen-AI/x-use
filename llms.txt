@@ -1,6 +1,8 @@
 # x-use
 
-> x-use is a Python MCP server and CLI for browser-native X (Twitter) workflows. Version 3.0.0 uses Patchright Chromium, authenticated with the operator's own X session, and provides 70 tools, seven prompts, four read-only resources, and seven bundled agent skills, including x-use-inbox for messages and notifications.
+> x-use is an open-source Python MCP server and CLI for X (Twitter). It uses the operator's authenticated browser session for profile and post research, inbox reads, and reviewed publishing and outreach. It runs locally with Patchright Chromium and does not require official X API credentials.
+
+Version 3.1.0 has 82 tools, seven prompts, four read-only resource patterns and seven bundled agent skills. It adds runtime diagnostics, campaign previews, bookmarks, reviewed post edit/delete and inbox controls to the 70 tools in 3.0.0. The package-name x-use-mcp command starts MCP directly for registry clients. This file is an optional documentation map for agents, not a search-ranking mechanism.
 
 The package name is `x-use-mcp`; the MCP Registry name is `io.github.ihuzaifashoukat/x-use`. The license is MIT. Install or upgrade with `python -m pip install --upgrade x-use-mcp`, then install the matching browser with `python -m patchright install chromium`.
 
@@ -17,6 +19,8 @@ The package name is `x-use-mcp`; the MCP Registry name is `io.github.ihuzaifasho
 
 ## Setup and workflow documentation
 
+- [Documentation index](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/README.md): choose a guide by task.
+- [Practical workflows](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/WORKFLOWS.md): research, reply drafts, inbox, individual outreach, campaign preview and threads, with fictional examples.
 - [README](https://github.com/ihuzaifashoukat/x-use/blob/main/README.md): install, configure clients and discover workflows.
 - [Setup prompt](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/SETUP_PROMPT.md): installation and client registration.
 - [MCP guide](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/MCP_GUIDE.md): tool groups, prompts, resources and result semantics.
@@ -28,6 +32,7 @@ The package name is `x-use-mcp`; the MCP Registry name is `io.github.ihuzaifasho
 
 ## Development and evidence
 
+- [October 12 audit](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/AUDIT_2026-10-12.md): current installation, complete protocol coverage, browser checks, bug fixes and explicit live-testing limits.
 - [Architecture](https://github.com/ihuzaifashoukat/x-use/blob/main/ARCHITECTURE.md): runtime, policy, storage and compatibility paths.
 - [Resilience audit](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/RESILIENCE_AUDIT.md): findings, fixes, evidence and limitations.
 - [Tool validation](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/TOOL_VALIDATION.md): coverage and live status for each registered tool.

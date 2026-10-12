@@ -2,6 +2,7 @@ import logging
 import re
 from typing import Optional, List
 from datetime import datetime
+from urllib.parse import urlsplit
 
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
@@ -29,7 +30,7 @@ from .selectors import (
 
 _COUNT_RE = re.compile(r"(\d+(?:\.\d+)?)\s*([kKmM])?")
 
-_STATUS_ID_RE = re.compile(r"/status/(\d+)")
+_STATUS_ID_RE = re.compile(r"^/(?:[A-Za-z0-9_]{1,15}|i/web)/status/(\d+)(?:/|$)")
 
 
 def extract_status_id(href: Optional[str]) -> Optional[str]:
@@ -41,13 +42,24 @@ def extract_status_id(href: Optional[str]) -> Optional[str]:
     """
     if not href:
         return None
-    match = _STATUS_ID_RE.search(href)
+    try:
+        parsed = urlsplit(href)
+        if (
+            parsed.scheme != 'https'
+            or parsed.hostname not in {'x.com', 'www.x.com', 'mobile.x.com', 'twitter.com', 'www.twitter.com', 'mobile.twitter.com'}
+            or parsed.port not in (None, 443)
+            or parsed.username is not None
+            or parsed.password is not None
+        ):
+            return None
+    except (TypeError, ValueError):
+        return None
+    match = _STATUS_ID_RE.match(parsed.path)
     return match.group(1) if match else None
 
 
 def find_article_with_status_id(context, tweet_id: str):
-    """Return the first <article> containing a status link whose id matches
-    `tweet_id` exactly, or None.
+    """Return an article whose own timestamp link identifies the target.
 
     The id comparison happens in Python on extracted href ids; a DOM-level
     contains(@href, '/status/<id>') prefix-matches other tweets whose id
@@ -62,16 +74,23 @@ def find_article_with_status_id(context, tweet_id: str):
         return None
     for article in articles:
         try:
-            links = article.find_elements(By.XPATH, ".//a[contains(@href, '/status/')]")
+            links = article.find_elements(By.XPATH, f".{X_STATUS_LINK_XPATH}")
         except Exception:
             continue
+        primary_ids = set()
         for link in links:
             try:
                 href = link.get_attribute("href")
             except StaleElementReferenceException:
                 continue
-            if extract_status_id(href) == target:
-                return article
+            status_id = extract_status_id(href)
+            if status_id:
+                primary_ids.add(status_id)
+        # The target may be mentioned or embedded as a quoted post. Acting on
+        # its outer article would like/reply/repost a different author's post.
+        # Ambiguous primary identities fail closed instead of guessing.
+        if primary_ids == {target}:
+            return article
     return None
 
 

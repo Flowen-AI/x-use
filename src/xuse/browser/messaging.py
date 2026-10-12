@@ -1093,13 +1093,19 @@ class MessagingMixin:
         header = await self._one(scope.locator(_HEADER), "recipient_unverified")
         handles: set[str] = set()
         for node in await self._visible(header.get_by_text(_VISIBLE_HANDLE, exact=True)):
+            # A bare @handle next to an inline More button can concatenate into
+            # a different valid handle in innerText. Never treat controls as
+            # participant identity; prefer discrete labels/profile links.
+            if await node.locator('button, [role="button"]').count():
+                continue
             value = (await node.inner_text()).strip()
             if _VISIBLE_HANDLE.fullmatch(value):
                 handles.add(value[1:].lower())
-        for line in (await header.inner_text()).splitlines():
-            value = line.strip()
-            if _VISIBLE_HANDLE.fullmatch(value):
-                handles.add(value[1:].lower())
+        if not await header.locator('button, [role="button"]').count():
+            for line in (await header.inner_text()).splitlines():
+                value = line.strip()
+                if _VISIBLE_HANDLE.fullmatch(value):
+                    handles.add(value[1:].lower())
         for link in await self._visible(header.locator("a[href]")):
             handle = _profile_handle(await link.get_attribute("href"))
             if handle:

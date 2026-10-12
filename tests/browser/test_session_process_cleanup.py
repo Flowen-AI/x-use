@@ -17,8 +17,24 @@ import pytest
 from xuse.browser.sessions import AccountOwnerLock, PatchrightSessionPool, PlaywrightSessionPool, SessionEntry, _OwnedBrowserProcesses, _ProcessInspector
 
 
-def owned_process_handles(driver_pid):
-    """Snapshot descendants, then pin identities with OS handles (no PID reuse)."""
+def verified_descendant_pids(rows, driver_pid):
+    """Require owned Job membership and increasing ancestry creation times."""
+    root = rows.get(driver_pid)
+    if root is None or not root["live"] or not root["in_owned_job"]:
+        return set()
+    verified = {driver_pid}
+    while True:
+        children = {pid for pid, row in rows.items()
+                    if row["parent_pid"] in verified and row["in_owned_job"]
+                    and rows[row["parent_pid"]]["live"]
+                    and row["created"] >= rows[row["parent_pid"]]["created"]}
+        if children <= verified:
+            return verified
+        verified.update(children)
+
+
+def owned_process_handles(driver_pid, owned_job):
+    """Independently pin identities; PPIDs alone never authorize termination."""
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
 
     class ProcessEntry(ctypes.Structure):
@@ -43,6 +59,8 @@ def owned_process_handles(driver_pid):
     kernel.CloseHandle.restype = wintypes.BOOL
     kernel.GetProcessTimes.argtypes = [wintypes.HANDLE] + [ctypes.POINTER(wintypes.FILETIME)] * 4
     kernel.GetProcessTimes.restype = wintypes.BOOL
+    kernel.IsProcessInJob.argtypes = [wintypes.HANDLE, wintypes.HANDLE, ctypes.POINTER(wintypes.BOOL)]
+    kernel.IsProcessInJob.restype = wintypes.BOOL
     kernel.GetSystemTimeAsFileTime.argtypes = [ctypes.POINTER(wintypes.FILETIME)]
     cutoff = wintypes.FILETIME()
     kernel.GetSystemTimeAsFileTime(ctypes.byref(cutoff))
@@ -66,7 +84,7 @@ def owned_process_handles(driver_pid):
         if children <= owned:
             break
         owned.update(children)
-    handles, identities = [], {}
+    pinned, rows = {}, {}
     for pid in owned:
         handle = kernel.OpenProcess(0x00100000 | 0x0001 | 0x1000, False, pid)  # SYNCHRONIZE | TERMINATE | QUERY_LIMITED_INFORMATION
         if handle:
@@ -74,11 +92,25 @@ def owned_process_handles(driver_pid):
             queried = kernel.GetProcessTimes(handle, *(ctypes.byref(value) for value in times))
             created = (times[0].dwHighDateTime << 32) | times[0].dwLowDateTime
             if queried and created <= snapshot_time:
-                handles.append(handle)
-                identities[handle] = {"pid": pid, "parent_pid": parents.get(pid), "executable": executables.get(pid)}
+                member = wintypes.BOOL()
+                membership_known = kernel.IsProcessInJob(handle, owned_job, ctypes.byref(member))
+                pinned[pid] = handle
+                rows[pid] = {"parent_pid": parents.get(pid), "created": created,
+                             "live": kernel.WaitForSingleObject(handle, 0) == 258,
+                             "in_owned_job": bool(member.value) if membership_known else False}
             else:
                 # A PID reused after the snapshot belongs to another process.
                 kernel.CloseHandle(handle)
+    verified = verified_descendant_pids(rows, driver_pid)
+    handles, identities = [], {}
+    for pid, handle in pinned.items():
+        if pid in verified:
+            handles.append(handle)
+            identities[handle] = {"pid": pid, "parent_pid": parents.get(pid), "executable": executables.get(pid)}
+        else:
+            # A stale PPID can point to a reused browser PID. Never let that
+            # unrelated process enter either assertions or fixture cleanup.
+            kernel.CloseHandle(handle)
     if len(handles) <= 1:
         for handle in handles:
             kernel.CloseHandle(handle)
@@ -121,16 +153,40 @@ async def test_native_synthetic_cleanup_drains_owned_processes(driver, failure, 
         ])
         page = await context.new_page()
         await page.set_content("<p>Synthetic local process lifecycle</p>")
-        # Private transport inspection is confined to this test. Production
-        # lifecycle code continues to use the driver's public close APIs.
+        # Match production's narrow private-transport seam: capture the driver
+        # PID, then independently pin OS identities to verify public API and
+        # owned Job/process-handle cleanup without relying on PID reuse.
         process = pool._runtime._impl_obj._connection._transport._proc
-        kernel, handles, identities = owned_process_handles(process.pid)
+        guard = pool._process_guard
+        assert guard is not None and guard.job is not None
+        kernel, handles, identities = owned_process_handles(process.pid, guard.job)
         cdp = await browser.new_browser_cdp_session()
         info = await cdp.send("SystemInfo.getProcessInfo")
         roles = {item["id"]: item["type"] for item in info["processInfo"]}
         await cdp.detach()
         for identity in identities.values():
             identity["role"] = "driver" if identity["pid"] == process.pid else roles.get(identity["pid"], "unlisted_descendant")
+        await pool._refresh_owned_processes()
+        guard = pool._process_guard
+        kernel.IsProcessInJob.argtypes = [wintypes.HANDLE, wintypes.HANDLE, ctypes.POINTER(wintypes.BOOL)]
+        kernel.IsProcessInJob.restype = wintypes.BOOL
+        memberships = []
+        for handle in handles:
+            member = wintypes.BOOL()
+            queried = kernel.IsProcessInJob(handle, guard.job, ctypes.byref(member))
+            memberships.append({**identities[handle], "in_owned_job": bool(member.value) if queried else None,
+                                "tracked_by_guard": identities[handle]["pid"] in guard.processes})
+        record_property("observed_process_membership", memberships)
+        exit_observations = []
+        original_exited = guard.exited
+
+        def observed_exited():
+            result = original_exited()
+            if result:
+                exit_observations.append(sum(kernel.WaitForSingleObject(handle, 0) == 258 for handle in handles))
+            return result
+
+        guard.exited = observed_exited
         # Transient utility children may exit between the process snapshot
         # and CDP role query. The test driver and main browser must be live;
         # already-exited pinned children still count as successfully drained.
@@ -167,9 +223,16 @@ async def test_native_synthetic_cleanup_drains_owned_processes(driver, failure, 
         while any(kernel.WaitForSingleObject(handle, 0) == 258 for handle in handles) and time.monotonic() < deadline:
             await asyncio.sleep(0.02)
         record_property("cleanup_seconds", round(time.monotonic() - started, 3))
-        record_property("processes_remaining_at_owner_release", remaining_at_release)
+        record_property("processes_remaining_at_owner_release", list(remaining_at_release))
         remaining = [identities[handle] for handle in handles if kernel.WaitForSingleObject(handle, 0) == 258]
         record_property("remaining_processes_after_cleanup", remaining)
+        record_property("observed_survivors_when_guard_claimed_exit", list(exit_observations))
+        record_property("guard_state_after_cleanup", {
+            "complete": guard.complete, "scan_failed": guard.scan_failed,
+            "pending_count": len(guard.pending), "retained": pool._process_guard is guard,
+            "owner_retained": owner._file is not None,
+            "pinned_alive": [item.pid for item in guard.processes.values() if item.token is not None and item.alive()],
+        })
         if failure == "context_browser":
             assert remaining_at_release == [0], "Successful runtime stop must drain the observed native tree."
         assert all(kernel.WaitForSingleObject(handle, 0) == 0 for handle in handles), "Owned native processes survived cleanup."

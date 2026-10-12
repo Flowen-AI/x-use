@@ -1,5 +1,12 @@
 Configuration Reference
 
+Version 3.1.0 adds a process-scoped development unlock allowance. Set
+`XUSE_ENV=development` and `XUSE_DEV_UNLOCK_DAILY_CAP=20` on that server only.
+The accepted override range is 1–50; it cannot enable an explicitly disabled
+unlock action. Existing attempt counts, pauses and pacing still apply. See
+[development inbox testing](../CONTRIBUTING.md#development-inbox-unlocking).
+`get_account_safety` exposes remaining budgets and the next UTC reset timestamp.
+
 Overview
 
 - Summarizes key fields in `config/settings.json` and `config/accounts.json`.
@@ -53,11 +60,12 @@ Notes
 - logging: level, format, (optional file/console handlers)
 - browser_settings
   - type: chrome|firefox, headless, user_agent_generation, custom_user_agent
-  - proxy: global proxy URL (overridden per account)
+  - proxy: global proxy URL (overridden by a non-empty account route). Missing/empty account routes inherit it. Invalid URLs, unresolved environment variables and missing/empty configured pools fail before launch; they never select a direct route.
   - proxy_pools: { name: [ "http://user:${ENV}@host:port", ... ] }
   - proxy_pool_strategy: hash|round_robin
   - proxy_pool_state_file: path for round-robin counters
-  - Pool management surface: the `list_proxies`, `add_proxy`, `remove_proxy`, and `test_proxy` MCP tools manage these pools. Pools remain editable by hand; MCP writes are validated, backed up (`config/backups/`), and atomic, and every credential is masked (`scheme://***@host:port`) in tool responses.
+  - Async backends support HTTP/HTTPS with optional credentials and unauthenticated SOCKS5. Legacy Chrome supports unauthenticated HTTP/HTTPS/SOCKS4/SOCKS5; Firefox supports unauthenticated HTTP/SOCKS4/SOCKS5. Unsupported authentication, transport or conflicting browser routing flags are rejected. `round_robin` is legacy-only; async account pools use stable hashing.
+  - Pool management surface: the `list_proxies`, `add_proxy`, `remove_proxy`, and `test_proxy` MCP tools manage these pools. Pools remain editable by hand; MCP writes are validated, backed up in a `backups/` directory beside the selected settings file, and atomic. Credentials are masked (`scheme://***@host:port`) in tool responses.
   - window_size, driver_options, timeouts
   - use_undetected_chromedriver: bool (Chrome only)
   - enable_stealth: bool (Chrome only)
@@ -70,7 +78,7 @@ Notes
   - browser_channel: `null` for the matching bundled Chromium, `chrome`/`msedge` for installed browsers, or `chromium` for bundled full Chromium. Run `python -m patchright install chromium` for the default bundled browser (`python -m playwright install chromium` for that optional backend). `x-use doctor` checks the driver and executable selected by these settings.
   - max_browser_sessions: integer 1-16, default `4`; limits warm isolated contexts within one server process.
   - draft_mode: bool, default `true`. When on, write tools (`post_tweet`, `generate_and_post`, `reply_to_tweet`, `engage`) build the full payload, store a draft, and change nothing until `approve_draft(draft_id)` is called. Messages and follows always require individual approval, even when this setting is `false`.
-  - session_idle_timeout_seconds: idle timeout for the per-account browser session pool before sessions are reaped. Default `600`.
+  - session_idle_timeout_seconds: idle timeout before unused account contexts are reaped. Default `600`. Once all contexts are gone, the async pool also retires the idle browser/driver; later work can launch a fresh runtime after verified cleanup. Active calls and startup are protected from idle retirement.
   - cold_start_timeout_seconds: max wait for a browser session to cold-start before the tool call fails with a structured error. Default `180`.
   - tool_timeout_seconds: finite positive overall browser-operation timeout, default `180`. Cancellation cleanup completes before returning; an interrupted write may have an uncertain outcome and must be inspected by action ID.
   - messaging_timeout_seconds: finite positive wait for inbox or passcode UI to render, default `60`. Known login, passcode, and rate-limit gates still return early.
@@ -79,7 +87,7 @@ Notes
   - outreach_file: account-scoped leads, suppression and campaigns SQLite path, default `data/outreach.sqlite3`.
   - safety.read_interval_seconds / safety.write_interval_seconds: finite nonnegative minimum attempt spacing, defaults `2` / `90`.
   - safety.max_actions_per_minute: positive integer shared attempt cap, default `6`.
-  - safety.daily_caps: nonnegative integer UTC-day caps for known actions, default `{read: 300, post: 5, reply: 15, like: 30, retweet: 10, message: 10, follow: 10, unlock: 5}`. Zero disables the action. Failed attempts count, and account pauses survive restarts.
+  - safety.daily_caps: nonnegative integer UTC-day caps for known actions, default `{read: 300, post: 5, reply: 15, like: 30, retweet: 10, message: 10, follow: 10, unlock: 5, bookmark: 30, inbox: 20}` in the development tree. The last two budgets cover the new reviewed controls. Edits/deletions share `post`; reversal actions share their original action budget. Zero disables the action. Failed attempts count, and account pauses survive restarts.
   - Safety caps are operator policy, not X-published limits or a guarantee against account restrictions. They apply to both async browser drivers through granular tools, draft approval and queue executors.
   - The owner inbox PIN is supplied through a server environment variable (`XUSE_INBOX_PIN` by default), then consumed once by `unlock_inbox`. Never place it in settings, cookie exports, drafts or tool arguments.
 

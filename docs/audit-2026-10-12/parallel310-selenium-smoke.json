@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "checks": 6,
+  "browser_version": "154.0.8037.99",
+  "driver_version": "154.0.8037.92",
+  "external_actions": 0,
+  "fixture_navigation": "file-only",
+  "coverage": [
+    "own-timestamp selection",
+    "quoted-target rejection",
+    "real editor and submit click",
+    "fresh success toast",
+    "detached editor plus unrelated toast rejected",
+    "one submission per scenario"
+  ]
+}

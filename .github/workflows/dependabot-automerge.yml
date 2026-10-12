@@ -1,0 +1,66 @@
+name: Dependabot auto-merge
+
+on:
+  # No base-branch filter: a retargeted PR must also lose queued auto-merge.
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review, converted_to_draft, auto_merge_enabled]
+
+permissions: {}
+
+concurrency:
+  group: dependabot-automerge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  automerge:
+    name: Dependabot auto-merge policy
+    if: >-
+      github.repository == 'ihuzaifashoukat/x-use' &&
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.user.id == 49699333 &&
+      github.event.pull_request.user.type == 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Privileged execution reads only the policy already reviewed on main.
+      # Neither the PR head nor its potentially edited base ref is checked out.
+      - name: Check out trusted policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ihuzaifashoukat/x-use
+          ref: main
+          persist-credentials: false
+          sparse-checkout: .github/scripts/dependabot-automerge.cjs
+          sparse-checkout-cone-mode: false
+      - name: Revoke previous permission and verify current author
+        id: prepare
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const policy = require('./.github/scripts/dependabot-automerge.cjs');
+            await policy.prepare({ github, context, core });
+      - name: Read verified Dependabot update metadata
+        id: metadata
+        if: steps.prepare.outputs.eligible == 'true'
+        continue-on-error: true
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          skip-verification: false
+          skip-commit-verification: false
+      - name: Apply patch and minor policy to the same head
+        if: always() && steps.prepare.outcome == 'success'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          METADATA_OUTCOME: ${{ steps.metadata.outcome }}
+          DEPENDABOT_METADATA: ${{ steps.metadata.outputs.updated-dependencies-json }}
+          DEPENDABOT_UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          EXPECTED_HEAD: ${{ steps.prepare.outputs.head }}
+          EXPECTED_BASE: ${{ steps.prepare.outputs.base }}
+        with:
+          script: |
+            const policy = require('./.github/scripts/dependabot-automerge.cjs');
+            await policy.apply({ github, context, core, env: process.env });

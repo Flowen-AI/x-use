@@ -1,294 +1,210 @@
-# x-use
+# x-use — MCP server for X (Twitter)
 
 <!-- mcp-name: io.github.ihuzaifashoukat/x-use -->
 
-**Browser-native AI agents for X (Twitter). Multi-account, MCP-ready, no X API key required.**
+[![x-use logo — research, draft, review and publish with an MCP server for X (Twitter)](https://raw.githubusercontent.com/ihuzaifashoukat/x-use/efb9500d4edd0d1482688d1a11b9b39239aa9bc0/assets/x-use-social-preview.jpg)](https://github.com/ihuzaifashoukat/x-use)
 
-x-use uses an async Patchright Chromium browser authenticated with your own X session. Its MCP tools cover posts, replies, searches, inbox reads, reviewed messages, follows, local leads, and campaign drafts. Isolated account contexts, browser ownership locks, durable local action budgets, and uncertain-outcome tracking protect shared sessions.
+**Connect your AI client to X research, inbox reads, and reviewed publishing.**
 
-No official X API is used. Write tools stage drafts by default; messages and follows always require individual draft approval. Browser challenges and rate limits pause work for operator recovery. [Browser runtime and outreach guide](docs/BROWSER_RUNTIME.md) describes setup, limits, recovery, and current limitations.
+x-use is an open-source Python Model Context Protocol (MCP) server and CLI for X (Twitter). Connect Claude, Codex, Cursor or another local MCP client to profile research, inbox management and reviewed publishing. It uses your authenticated browser session, supports multiple accounts and runs locally without official X API credentials.
 
-The detailed [runtime audit](docs/RESILIENCE_AUDIT.md) records the controls, test evidence and remaining compatibility gaps. The [tool validation matrix](docs/TOOL_VALIDATION.md) distinguishes live-account results from isolated tests for every registered tool.
-
-**x-use 3.0.0** brings reviewed outreach, structured messages and notifications, and seven agent skills. See the [migration notes](CHANGELOG.md#migration-from-2x) when upgrading from 2.x. Use accounts you own or are authorized to manage.
-
-[![MCP Badge](https://lobehub.com/badge/mcp/ihuzaifashoukat-x-use)](https://lobehub.com/mcp/ihuzaifashoukat-x-use)
-[![Glama score](https://glama.ai/mcp/servers/ihuzaifashoukat/x-use/badges/score.svg)](https://glama.ai/mcp/servers/ihuzaifashoukat/x-use)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![PyPI](https://img.shields.io/pypi/v/x-use-mcp)](https://pypi.org/project/x-use-mcp/)
+[![Python](https://img.shields.io/pypi/pyversions/x-use-mcp)](https://pypi.org/project/x-use-mcp/)
 [![CI](https://github.com/ihuzaifashoukat/x-use/actions/workflows/ci.yml/badge.svg)](https://github.com/ihuzaifashoukat/x-use/actions/workflows/ci.yml)
-[![Issues](https://img.shields.io/github/issues/ihuzaifashoukat/x-use)](https://github.com/ihuzaifashoukat/x-use/issues)
-[![Forks](https://img.shields.io/github/forks/ihuzaifashoukat/x-use)](https://github.com/ihuzaifashoukat/x-use/network/members)
-[![Stars](https://img.shields.io/github/stars/ihuzaifashoukat/x-use)](https://github.com/ihuzaifashoukat/x-use/stargazers)
+[![MIT license](https://img.shields.io/badge/license-MIT-blue)](https://github.com/ihuzaifashoukat/x-use/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/ihuzaifashoukat/x-use?style=flat)](https://github.com/ihuzaifashoukat/x-use/stargazers)
 
----
+[Quickstart](#quickstart) · [Documentation](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/README.md) · [Tool reference](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/MCP_GUIDE.md) · [Discussions](https://github.com/ihuzaifashoukat/x-use/discussions) · [Contribute](https://github.com/ihuzaifashoukat/x-use/blob/main/CONTRIBUTING.md)
 
-## Install
+## What can you do with x-use?
 
-From PyPI (CLI and MCP server):
+- **Research before replying:** search X, inspect a profile, read posts and bounded thread context, and prepare a relevant reply.
+- **Work through your inbox:** inspect visible conversations, unread messages, requests and notifications; prepare individual messages and supported conversation actions for review.
+- **Publish with context:** stage posts or multi-post threads, inspect the exact text, and approve the draft when it is ready.
+- **Organize outreach locally:** maintain leads, opt-outs and campaign drafts with per-account limits and delivery tracking.
+
+Your AI client supplies the reasoning and text. An optional OpenAI-compatible LLM configuration supports server-side generation; ordinary explicit-text MCP workflows do not need that extra key.
+
+## Quickstart
+
+Requires Python 3.10+ and Chromium. The CI matrix covers Python 3.10–3.14 on Windows, macOS and Linux.
+
+**Version 3.1.0 provides 82 tools** for research, inbox management, reviewed publishing and account operations. Upgrade the package and restart your MCP client to load the current tools.
+
+### 1. Install the server and browser
 
 ```bash
 python -m pip install --upgrade x-use-mcp
 python -m patchright install chromium
 ```
 
-From an existing checkout, one command installs uv if needed, synchronizes the locked dependencies into `.venv`, installs matching Chromium, creates missing sample configuration and runs `x-use doctor`:
+### 2. Choose a private data directory and initialize
+
+Windows PowerShell:
 
 ```powershell
-py -3 scripts/setup_uv.py
+$env:X_USE_HOME = "$env:LOCALAPPDATA\x-use"
+x-use init
+x-use doctor
 ```
 
-On macOS/Linux use `python3 scripts/setup_uv.py`. Requires Python 3.10+ with `venv`/`ensurepip` and network access for downloads. A fresh environment uses the invoking Python when it is Python 3.10-3.14, and falls back to Python 3.12 otherwise; an existing `.venv` is reused. Add `--dev` for development tools. Linux hosts missing browser libraries can explicitly use `--with-system-deps`, which may require OS administrator permission. The platform installers set `X_USE_HOME` to a stable per-user data directory (or retain your existing value), and print the same value in their MCP config snippet. Setup creates a minimal default `config/settings.json` and an inactive sample account only when those files are missing; run `x-use init` to add your own account and cookies.
-
-To clone and set up the full repo in one command, the platform installers delegate to the same uv setup:
-
-Windows (PowerShell):
-
-```powershell
-iex "& { $(irm https://raw.githubusercontent.com/ihuzaifashoukat/x-use/main/install.ps1) }"
-```
-
-macOS / Linux / Git Bash:
+macOS / Linux:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ihuzaifashoukat/x-use/main/install.sh | bash
+export X_USE_HOME="$HOME/.local/share/x-use"
+x-use init
+x-use doctor
 ```
 
-Or the manual way:
+The wizard configures your account and imports your own X session cookies from a local JSON export. Keep cookies and inbox PINs private. Use the same absolute data directory in your client configuration below; shell environment settings alone do not configure a desktop client.
 
-```bash
-git clone https://github.com/ihuzaifashoukat/x-use.git
-cd x-use
-pip install -e .
-```
+### 3. Connect your MCP client
 
-Requires Python 3.10+ and a compatible Chromium browser. Install the default driver's Chromium with `python -m patchright install chromium`, or set `mcp.browser_channel` to `chrome` or `msedge` to use an installed browser. Optional `mcp.browser_backend="playwright"` requires the `playwright` package extra and its own matching browser installation. The legacy CLI batch engine remains available through Selenium.
-
-## Automatic setup
-
-Point any capable agent at this repository and it can install and configure x-use
-itself. [`SKILL.md`](SKILL.md) at the root is the install-and-configure skill: it
-covers prerequisites, `pip install`, MCP client registration for Claude Desktop,
-Claude Code, Codex, Cursor, and Windsurf, the client restart, cookie-based
-account setup, keywords, and persona.
-
-```bash
-npx skills add ihuzaifashoukat/x-use
-```
-
-Or paste the one-shot prompt in [docs/SETUP_PROMPT.md](docs/SETUP_PROMPT.md) into
-your client. Prefer to drive it yourself? Keep reading.
-
-## Set up
-
-```bash
-x-use init     # interactive wizard: presets, account + cookie import, LLM keys
-x-use doctor   # verify browser/driver, cookies, LLM keys, proxies
-```
-
-Set `X_USE_HOME` to an absolute private directory before setup and use the same
-value in your MCP client environment. PyPI installations include a Patchright
-starter configuration and an inactive sample account; source checkouts also
-offer the [full preset library](presets/README.md). Existing configuration is
-kept unless you explicitly choose to replace it.
-
-Then connect your AI client. Paste this into `claude_desktop_config.json` (Claude Desktop > Settings > Developer > Edit Config); the same `command`/`args` pair works for any MCP client that runs stdio servers:
+Use this stdio configuration in clients that accept an `mcpServers` object, such as Claude Desktop:
 
 ```json
 {
   "mcpServers": {
     "x-use": {
-      "command": "x-use",
+      "command": "/absolute/path/to/x-use",
       "args": ["mcp"],
-      "env": {"X_USE_HOME": "/absolute/path/to/x-use-data"}
+      "env": {
+        "X_USE_HOME": "/absolute/path/to/x-use-data"
+      }
     }
   }
 }
 ```
 
-Replace the `X_USE_HOME` placeholder with the directory used during setup
-(Windows paths can use forward slashes, such as `C:/Users/you/AppData/Local/x-use`).
-If `x-use` is not on your client's PATH, use the full path the installer printed (for example `.venv/bin/x-use` or `.venv\Scripts\x-use.exe`). Restart the client, then ask it to `list_accounts`.
+Replace both paths. On Windows, use the installed `x-use.exe` path and forward slashes in JSON, for example `C:/Users/you/AppData/Local/x-use` for the data directory. Locate the executable with `Get-Command x-use` in PowerShell or `command -v x-use` on macOS/Linux.
 
-**Draft mode is on by default.** Ordinary publishing tools return a reviewable draft for `approve_draft`; operators can explicitly disable that mode with `"mcp": { "draft_mode": false }`. Messages, follows and thread starts still require draft approval. Queue processing, opt-in auto-drain and the legacy batch runner are separate execution paths, so draft mode is not a global prohibition on writes.
+Claude Code, Codex, Cursor and Windsurf have their own registration locations or commands. Follow the [client setup instructions](https://github.com/ihuzaifashoukat/x-use/blob/main/SKILL.md), then reload the client if required. Ask it to call `list_accounts` before starting browser work.
 
-## MCP tools
+### 4. Try a first workflow
 
-The MCP server exposes 70 tools for account and browser status, public timeline and profile reads, inbox, visible analytics availability, reviewed outreach, lead and campaign drafts, action recovery, and resumable X thread workflows. Start profile research with `get_profile_context`, then use `prepare_outreach` to stage one personalized DM for review. Use `get_thread` to read bounded visible conversation context and `prepare_thread` to stage a multi-post draft. Full references: [docs/MCP_GUIDE.md](docs/MCP_GUIDE.md) and [browser, outreach, and thread guide](docs/BROWSER_RUNTIME.md). Writes use draft review by default; queued work executes through an explicit `process_queue` call unless the operator enabled auto-drain.
+With draft mode enabled, ask your client:
 
-| Group | Tools |
-|---|---|
-| Read-only & status | `list_accounts`, `get_account`, `get_metrics`, `get_account_analytics`, `search_tweets`, `search_profile`, `get_tweet`, `prepare_reply`, `list_queue`, `list_drafts`, `get_draft`, `get_run_status`, `get_account_health`, `list_proxies` |
-| Write (draft mode by default) | `post_tweet`, `generate_and_post`, `reply_to_tweet`, `engage`, `approve_draft` |
-| Draft management | `reject_draft` |
-| Legacy batch (Selenium only; executes directly) | `run_cycle` |
-| Scheduled queue | `queue_post`, `queue_engagement`, `cancel_queued_action`, `process_queue` |
-| Composite (server LLM) | `research_and_stage`, `draft_post_variations` |
-| Account management | `add_account`, `update_account`, `set_account_active`, `remove_account` |
-| Proxy management | `add_proxy`, `remove_proxy`, `test_proxy` |
-| X threads | `get_thread`, `prepare_thread`, `get_thread_run`, `continue_thread`, `cancel_thread` |
+> Check my account health, research the profile I specify, and summarize its recent visible posts. Prepare one relevant reply draft and show me its ID and exact text. Wait for my approval before publishing.
 
-Inbox reads are partial and limited to the currently visible conversations and
-messages. `get_inbox` and `search_conversations` accept
-`folder="inbox"|"requests"|"other"`, `inbox_filter="all"|"unread"|"read"`, and
-`unread_first`. Native Unread selection and visible unread markers carry their
-evidence in the result; unknown unread state remains unknown. Other requests
-may be spam or lower priority. Listing requests does not accept them.
-For older messages in a
-conversation, pass `next_before_message_id` from the result as the next call's
-`before_message_id`. This cursor only pages the current visible conversation
-window. Opening a conversation can mark it read.
+The flow is `get_account_health` → `get_profile_context` → `prepare_reply` → `reply_to_tweet` → `get_draft`. The reply tool stages a draft under the default policy; `prepare_reply` supplies context. Use `approve_draft` only when authorized.
 
-`get_notifications(account="personal", view="all", limit=20)` reads structured
-notifications; use `view="mentions"` for the Mentions tab. Results include actors,
-related posts or previews, timestamps, and supported event-type evidence.
-Unread state and notification IDs stay `null` when X does not expose them.
-Reads are bounded and partial, and visiting notifications may mark them read.
+[More workflow examples](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/WORKFLOWS.md) cover inbox triage, outreach and threads.
 
-`get_account_analytics` reports only evidenced signed-in-owner analytics
-availability. The observed screen is an X Premium paywall; it returns
-`premium_required` without metrics. Unsupported layouts return
-`unsupported_dom`. It does not expose an analytics dashboard or substitute
-local action metrics from `get_metrics`.
-
-Interactive use needs no LLM key: your MCP client (Claude, Codex, ...) does the thinking, sees tweet images via `get_tweet`/`prepare_reply`, and passes explicit text to the write tools. The optional server-side LLM (`llm` block) only powers the composite tools, `"auto"` text, and background automation.
-
-Drafts persist in `data/drafts.jsonl`; the queue persists in `data/engagement_queue.jsonl`. Both survive restarts.
-
-## MCP prompts and resources
-
-Tools are what the model calls. Prompts and resources are the other two halves of the protocol, and x-use serves both.
-
-**Prompts** are the workflows, usable in any MCP client. The bundled `SKILL.md` files only work in clients that implement Agent Skills; these need no installation and show up wherever your client surfaces prompts.
-
-| Prompt | Arguments | What it does |
-|---|---|---|
-| `research_niche` | `account`, `keywords`, `profiles` | Read-only sweep of keywords and watched profiles, scored shortlist, stages nothing |
-| `draft_replies` | `account`, `tweet_urls`, `lane` | Stage replies in the account's persona, into drafts or the queue |
-| `review_and_publish` | `account` | Review what is staged and publish only what you approve by id |
-| `daily_check` | `account` | Health, metrics, drafts, and queue in one read-only pass |
-| `setup_account` | none | Conversational onboarding from nothing |
-| `outreach_message` | `account`, `profile` | Verify one profile and prepare one reviewed DM draft |
-| `thread_workflow` | `account`, `tweet_url` | Read bounded visible context, prepare a reviewed thread, and inspect durable progress |
-
-**Resources** are read-only context your client can attach without spending a turn. None of them start a browser, and all run the same masking as the tools, so no cookie, password, or proxy credential leaves through them.
-
-| Resource | Type | Contents |
-|---|---|---|
-| `xuse://accounts` | JSON | Every configured account, secrets stripped |
-| `xuse://accounts/{account_id}` | JSON | One account's full masked config |
-| `xuse://accounts/{account_id}/persona` | Markdown | The account's voice. Attach before writing anything as it |
-| `xuse://drafts/pending` | JSON | Everything awaiting approval, with the exact text that would publish |
-
-## Agent skills
-
-`x-use init` (or `x-use skills install`) installs seven agent skills for Claude Code and Codex: **x-use** (overview), **x-use-setup** (onboarding), **x-use-engage** (research and replies), **x-use-inbox** (messages, unread/request folders, and notifications), **x-use-content** (content creation), **x-use-review** (daily digest), and **x-use-threads** (thread reading, review, and continuation). For Claude Code, the [plugin setup guide](plugins/x-use/README.md) covers marketplace installation and local checkout loading with an absolute data directory.
-
-**Zero-knowledge setup:** paste the prompt from [docs/SETUP_PROMPT.md](docs/SETUP_PROMPT.md) into your AI client, it installs, registers, verifies, and interviews you to configure your account.
-
-## CLI
+<details>
+<summary>Install from source or let your agent handle setup</summary>
 
 ```bash
-x-use init                            # interactive setup wizard
-x-use run                             # all active accounts, concurrent
-x-use run --account my_account        # one account only
-x-use run --pipeline keyword_replies  # one pipeline only (in-memory; config files untouched)
-x-use doctor                          # environment checks; exits non-zero on failure
-x-use mcp                             # start the MCP stdio server
+git clone https://github.com/ihuzaifashoukat/x-use.git
+cd x-use
+python scripts/setup_uv.py --dev
 ```
 
-Pipelines for `--pipeline`: `community_engagement`, `competitor_reposts`, `content_curation`, `keyword_replies`, `keyword_retweets`, `likes`. The MCP `run_cycle` tool accepts the same names.
+On Windows you can use `py -3 scripts/setup_uv.py --dev`; on macOS/Linux use `python3` if needed. Setup installs uv when missing, synchronizes locked dependencies into `.venv`, installs matching Chromium, creates missing sample configuration and runs diagnostics. Activate the environment or use its executable directly. Then initialize your account.
 
-The legacy `python src/main.py` entry point remains available through a deprecated compatibility shim. Use `x-use run` for the legacy batch engine.
-
-## Features
-
-| Area | What you get |
-|---|---|
-| MCP server | Tools over stdio on the MCP Python SDK (`FastMCP`, `mcp>=1.30,<2` for tool annotations and structured results), including profile context, public connections, inbox, reviewed outreach, persistent leads/campaigns, session recovery, action budgets, and resumable thread workflows. |
-| Draft mode | On by default. Write tools build the full payload (including LLM-generated text), store a draft, and touch nothing until `approve_draft` runs. |
-| Multi-account engine | Post (including communities and media), reply, repost/quote, like, keyword search, and relevance-gated engagement. Per-account overrides for keywords, LLM settings, and action behavior. |
-| LLM generation | One OpenAI-compatible client (`llm`: api_key, base_url, model) covers OpenAI, OpenRouter, Azure, Gemini, and local servers. Only needed for `"auto"` text and background automation; interactive MCP use runs keyless. Keys resolve from env/`.env` first, then `config/settings.json`. |
-| Browser runtime | Async Patchright, isolated contexts, account ownership locks, bounded sessions and explicit challenge recovery. |
-| Proxies | Per-account routes and named pools; async MCP uses stable account hashing, while round-robin is a legacy batch setting. Proxy strings support `${VAR}` interpolation. |
-| Metrics | Per-account counters in `data/metrics/<account_id>.json` plus JSONL event logs in `logs/accounts/<account_id>.jsonl`. |
-
-## x-use vs. API-based X MCP servers
-
-| | **x-use** | API-based X/Twitter MCP servers |
-|---|---|---|
-| X API cost | **$0**: cookie auth, no X API key needed | Paid X API tier required |
-| Multi-account | Built-in: per-account config, cookies, proxies | Typically one account |
-| Proxies | Per-account proxies, named pools, hash/round-robin rotation | N/A |
-| Browser management | Isolated Chromium contexts, per-account serialization, cross-process ownership locks | N/A (official API) |
-| Write safety | Draft mode **on by default**, explicit `approve_draft` gate | Usually posts directly |
-| Metrics | Per-account counters + JSONL event logs, readable via MCP | Varies |
-
-An LLM key is optional: interactive MCP use needs none (your agent writes the text). For `"auto"` generation and background automation, set one OpenAI-compatible key (`llm.api_key` + `base_url` + `model`, or `OPENAI_API_KEY`/`OPENAI_BASE_URL`/`OPENAI_MODEL`); that is the only key involved.
-
-## Configuration
-
-- `config/accounts.json`: your accounts (gitignored). Start from [`config/accounts.example.json`](config/accounts.example.json) or let `x-use init` write it.
-- `config/settings.json`: global defaults for browser, pacing, action caps, LLM, proxies, and the `mcp` section.
-- `.env`: LLM API keys; overrides `settings.json` (env wins). See [`.env.example`](.env.example).
-
-Full schema: [docs/CONFIG_REFERENCE.md](docs/CONFIG_REFERENCE.md). [Presets](presets/README.md) are reusable configuration templates: `beginner-patchright` and `reviewed_outreach` are the current MCP starters; the Selenium alternatives are explicitly labeled. [Data](data/README.md) holds private runtime state plus tracked dummy format examples. Changing a preset does not change an existing account, and sample cookies cannot authenticate one.
-
-## Optional proxy provider
-
-A proxy is optional and does not make an authenticated account anonymous or
-prevent platform restrictions. If your network needs one, [ScrapingAnt offers
-residential proxy service](https://scrapingant.com/residential-proxies?ref=mdkzote).
-
-## Responsible use
-
-Browser automation of X carries real account risk. Read [docs/BEST_PRACTICES.md](docs/BEST_PRACTICES.md) before running anything: it covers conservative rate limits (the shipped defaults), account warm-up, relevance filters, cookie and credential hygiene, and X ToS considerations. Keep delays high, caps low, and draft mode on.
-
-## FAQ
-
-### Does x-use need an X (Twitter) API key?
-
-No. x-use drives a real Chrome session authenticated with cookies you export from your own browser, so it never calls the X API and costs $0 in API fees. An LLM key is optional too: interactive MCP use is keyless, because your AI client writes the text and passes it to the tools.
-
-### Which MCP clients work with x-use?
-
-Any client that can run a stdio MCP server can use the documented configuration. Claude Desktop, Claude Code, Cursor, and Windsurf are supported by their stdio MCP configuration flows: `{"command": "x-use", "args": ["mcp"]}`.
-
-### How many X accounts can x-use manage?
-
-As many as you configure. Each account carries its own cookies, proxy, persona, keywords, and daily action caps in `config/accounts.json`, and gets its own browser session from a lazy pool that reaps idle sessions.
-
-### Will automating X get my account suspended?
-
-It can, and you should plan for that. x-use ships conservative action spacing and per-action daily caps, with draft review enabled by default. These controls do not guarantee freedom from account restrictions. Read [docs/BEST_PRACTICES.md](docs/BEST_PRACTICES.md) and keep the caps low.
-
-### What is the difference between x-use and twitter-automation-ai?
-
-They are the same project. `twitter-automation-ai` was renamed to `x-use` for the v2 relaunch, which added the MCP server, the `x-use` CLI, draft mode, and the PyPI package. Old URLs still redirect, and stars, forks, and issues came across intact.
-
-### Is x-use free?
-
-Yes, MIT licensed, installed with `pip install x-use-mcp`. The only costs are optional: an LLM key if you want server-side text generation, and residential proxies if you run several accounts at once.
-
-## Development
+For assisted installation, use the [setup prompt](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/SETUP_PROMPT.md) or install the root setup skill:
 
 ```bash
-pip install -e '.[dev]'
-pytest
+npx skills add ihuzaifashoukat/x-use
 ```
 
-The regression suite covers MCP contracts, approvals, budgets, uncertainty recovery, browser ownership, inbox state, campaign suppression, setup and the legacy engine. Synthetic browser fixtures use local intercepted responses without personal accounts. CI is configured in [`.github/workflows/ci.yml`](.github/workflows/ci.yml) for Windows, macOS and Linux on Python 3.10/3.11/3.12/3.13/3.14, locked uv installs, distribution validation, clean-wheel MCP/CLI startup, Chromium smoke runs, and a non-root container. Local Windows checks have been run; remote matrix and container results require a GitHub workflow run.
+The [Claude Code plugin](https://github.com/ihuzaifashoukat/x-use/blob/main/plugins/x-use/README.md) includes the bundled skills and MCP configuration guidance.
 
-x-use is published on PyPI and listed in the official MCP Registry as `io.github.ihuzaifashoukat/x-use`. Container targets and a Claude Code plugin are included; dashboard work and further selector recovery remain on the [roadmap](ROADMAP.md).
+</details>
 
-## Contributing
+## Capabilities
 
-Contributions are welcome. Selector fixes, presets, docs, and MCP tool ideas (via issues) are the most valuable contributions right now. See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community expectations.
+| Workflow | Representative tools | Details |
+|---|---|---|
+| Profile and post research | `get_profile_context`, `search_profile`, `search_tweets`, `get_tweet`, `get_thread` | Visible profile, post, media and bounded thread evidence |
+| Inbox and notifications | `get_inbox`, `search_conversations`, `get_conversation`, `get_notifications` | Inbox/request folders, read-state evidence and partial message history |
+| Publishing and inbox controls (3.1.0) | `get_bookmarks`, `edit_tweet`, `delete_tweet`, `unfollow_profile`, `manage_conversation` | Reviewed changes; [supported controls and limitations](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/CONTROLS.md) |
+| Reviewed publishing | `post_tweet`, `reply_to_tweet`, `prepare_thread`, `approve_draft` | Persistent drafts and resumable thread progress |
+| Individual outreach | `prepare_outreach`, `send_message`, `follow_profile` | Message and follow drafts require individual approval |
+| Leads and campaigns | `upsert_lead`, `create_campaign`, `prepare_campaign_messages`, `opt_out_lead` | Local records, suppression and bounded batches |
+| Account readiness (3.1.0) | `get_account_health`, `get_session_status`, `test_proxy` | [Operational score, evidence and recovery advice](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/ACCOUNT_HEALTH.md), plus explicit proxy connectivity checks |
+| Scheduling and recovery | `queue_post`, `process_queue`, `get_account_health`, `resolve_action_outcome` | Durable budgets, explicit recovery and uncertain-outcome tracking |
+
+**Version 3.1.0 includes 82 tools, seven prompts, four resource patterns and seven bundled skills.** It adds runtime diagnostics, campaign previews, bookmarks, reviewed post edits/deletions, engagement reversal and inbox controls to the 70 tools in 3.0.0. See [publishing and inbox controls](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/CONTROLS.md) for supported layouts and testing limits.
+
+The [MCP guide](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/MCP_GUIDE.md) documents every tool, prompt and resource. [Validation evidence](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/TOOL_VALIDATION.md) separates local protocol checks, synthetic browser fixtures and authorized live-account checks.
+
+For a uvx client, use `uvx x-use-mcp` or pin the release with
+`uvx x-use-mcp==3.1.0`. The `x-use-mcp` executable starts MCP without arguments;
+the existing `x-use mcp` command remains supported. Clients pinned to 3.0.0
+must use `uvx --from x-use-mcp==3.0.0 x-use mcp`.
+
+## How execution works
+
+The current MCP runtime uses async Patchright Chromium with separate account contexts. Your configuration, cookies, drafts, queue and action journals live under `X_USE_HOME`. AI-client and optional model-provider data handling depends on the client and provider you choose.
+
+The protocol implementation uses the maintained MCP Python SDK v1 line (`mcp>=1.30,<2`).
+
+Draft mode is enabled by default for ordinary publishing. Messages, follows and thread starts require draft approval. Direct publishing mode, explicit queue processing, opt-in auto-drain and the legacy batch runner have separate execution paths. Review the [configuration reference](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/CONFIG_REFERENCE.md) before changing these settings.
+
+The development checkout allows one MCP server process per `X_USE_HOME`, preventing concurrent servers from using stale draft and queue state. Close the existing connection before opening the same data directory in another client.
+
+## Limits to understand
+
+- Browser reads are bounded by visible X content. Followers, inboxes and threads are not complete exports; unavailable evidence remains unknown.
+- Opening conversations or notifications can change their native read state.
+- Encrypted inboxes may need the account owner's PIN again after a browser-context restart.
+- Analytics currently reports availability and the observed Premium gate; it does not provide a complete analytics dashboard.
+- X layout changes, expired sessions, account challenges and platform limits can interrupt work. Local controls do not guarantee protection from account restrictions.
+- The legacy Selenium batch engine (`x-use run` / `run_cycle`) executes separately from MCP draft review. Community posting is not currently verified in the async runtime.
+
+See [browser behavior and recovery](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/BROWSER_RUNTIME.md) and [responsible-use guidance](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/BEST_PRACTICES.md).
+
+## Frequently asked questions
+
+### Does x-use require an X API key?
+
+No. It operates visible X pages through a browser authenticated with your session cookies. It does not require official X API credentials. Optional server-side text generation may require an LLM provider key.
+
+### Which MCP clients can use x-use?
+
+Clients that launch local stdio MCP servers can use x-use. Setup examples cover Claude Desktop, Claude Code, Codex, Cursor and Windsurf. Client-specific discovery and reload behavior varies.
+
+### Does x-use automatically send every drafted message?
+
+No. Message drafts require individual approval. Other write behavior depends on draft mode, queue execution and the legacy runner; check the configured policy before requesting actions.
+
+### Can I manage multiple X accounts?
+
+Yes. Accounts have separate cookies, browser contexts and policy settings, with optional proxy routes. Browser capacity is bounded and depends on your host and configuration.
+
+### Can I edit posts or manage my X inbox?
+
+Version 3.1.0 adds reviewed edits and deletion of your own posts, bookmarks, unfollowing, and supported conversation request, mute/unmute and deletion actions. X determines edit eligibility. Inbox history is partial, and per-message editing/deletion, attachment sending and group administration are not implemented. See the [controls guide](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/CONTROLS.md) for exact arguments and limits.
+
+### Is x-use free and open source?
+
+The project is MIT licensed with no project license fee. AI-client subscriptions, optional model providers, proxies and hosting may have their own costs.
+
+### Is x-use affiliated with X?
+
+No. x-use is an independent community project. X and Twitter are names used to identify the platform it works with.
+
+### Was this project called twitter-automation-ai?
+
+Yes. The project was renamed to x-use during the v2 relaunch. See the [changelog](https://github.com/ihuzaifashoukat/x-use/blob/main/CHANGELOG.md) for its history.
+
+## Documentation and community
+
+Start with the [documentation index](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/README.md). It links setup, workflows, tools, configuration, presets, architecture and troubleshooting. X-Use is maintained by [Huzaifa Shoukat](https://github.com/ihuzaifashoukat) and welcomes community contributions.
+
+Found a reproducible problem? [Report a bug](https://github.com/ihuzaifashoukat/x-use/issues/new/choose). Have a workflow to share? [Start a discussion](https://github.com/ihuzaifashoukat/x-use/discussions). Useful first contributions include clearer setup instructions, fictional browser fixtures, platform fixes and example presets.
+
+See [CONTRIBUTING](https://github.com/ihuzaifashoukat/x-use/blob/main/CONTRIBUTING.md), the [Code of Conduct](https://github.com/ihuzaifashoukat/x-use/blob/main/CODE_OF_CONDUCT.md) and [security policy](https://github.com/ihuzaifashoukat/x-use/blob/main/SECURITY.md). If x-use helps your work, a GitHub star helps other developers discover it.
 
 ## Star history
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ihuzaifashoukat/x-use&type=Date)](https://star-history.com/#ihuzaifashoukat/x-use&Date)
+<a href="https://www.star-history.com/?repos=ihuzaifashoukat%2Fx-use&amp;type=date&amp;legend=top-left">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=ihuzaifashoukat/x-use&amp;type=date&amp;legend=top-left&amp;theme=dark" />
+    <img alt="Live star history for x-use" src="https://api.star-history.com/svg?repos=ihuzaifashoukat/x-use&amp;type=date&amp;legend=top-left" />
+  </picture>
+</a>
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+[MIT](https://github.com/ihuzaifashoukat/x-use/blob/main/LICENSE).

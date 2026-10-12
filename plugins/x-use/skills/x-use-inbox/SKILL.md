@@ -41,8 +41,11 @@ history by assumption, or reuse a cursor after its window has changed.
 
 Check `acceptance_required`, `can_reply` and `reply_state_source` before
 proposing a reply. Reads do not accept requests. If acceptance is required,
-the owner must handle it on X; there is no accept-request tool. `can_reply=false`
-or `null` does not establish a writable composer. Do not claim a request was
+inspect `get_conversation_controls` and prepare `manage_conversation` with
+`operation="accept_request"` only when authorized. Review the exact draft and
+approve it once. Supported mute/unmute and conversation deletion also use this
+reviewed tool; deletion does not erase recipients' copies. `can_reply=false` or
+`null` does not establish a writable composer. Do not claim a request was
 accepted or that unknown participants identify the intended recipient.
 
 ## Prepare and send the authorized message

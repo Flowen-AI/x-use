@@ -1,0 +1,30 @@
+name: Feature or documentation request
+description: Propose a useful MCP workflow, capability or documentation improvement.
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to do?
+      description: Explain the workflow and what blocks it today. Link related documentation or existing issues if useful.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Proposed behavior
+      description: Describe the expected inputs and result. For a tool, say whether it reads X, changes local state or publishes externally.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and limits
+      description: Note existing workarounds, relevant X UI behavior and any review, privacy or recovery requirements. Keep examples fictional.
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: How would you like to help?
+      options:
+        - Share use-case details
+        - Review documentation or try a fix
+        - Contribute an implementation or fictional test fixture

@@ -1,18 +1,20 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.ihuzaifashoukat/x-use",
-  "title": "x-use",
-  "description": "Browser-native AI agents for X (Twitter): multi-account, MCP-ready, no X API key required.",
+  "title": "X-Use - X (Twitter) MCP Server",
+  "description": "Research X (Twitter), read inboxes and review publishing through MCP. No X API key required.",
+  "websiteUrl": "https://github.com/ihuzaifashoukat/x-use",
   "repository": {
     "url": "https://github.com/ihuzaifashoukat/x-use",
     "source": "github"
   },
-  "version": "3.0.0",
+  "version": "3.1.0",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "x-use-mcp",
-      "version": "3.0.0",
+      "version": "3.1.0",
+      "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
       },

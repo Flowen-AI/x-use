@@ -75,6 +75,26 @@ async def test_ambiguous_public_connection_row_fails_closed(app):
         await app.adapter.get_profile_connections("alice")
 
 
+@pytest.mark.parametrize('owner', ['bob', 'Bob'])
+async def test_connection_bio_mentions_do_not_replace_verified_row_owner(app, owner):
+    app.document('/alice/following', '''<div data-testid="primaryColumn"><div data-testid="UserCell">
+      <div data-testid="UserAvatar-Container-bob"><a href="/bob">Avatar</a></div>
+      <a href="/bob">Bob</a><a href="/bob">@bob</a>
+      <span>I work with <a href="/carol">@carol</a></span>
+      </div></div>'''.replace('bob', owner))
+    result = await app.adapter.get_profile_connections('alice')
+    assert [item['handle'] for item in result['connections']] == ['bob']
+
+
+async def test_connection_avatar_without_matching_handle_stays_ambiguous(app):
+    app.document('/alice/following', '''<div data-testid="primaryColumn"><div data-testid="UserCell">
+      <div data-testid="UserAvatar-Container-bob"><a href="/bob">Avatar</a></div>
+      <a href="/bob">Bob</a><span><a href="/carol">@carol</a></span>
+      </div></div>''')
+    with pytest.raises(BrowserActionError, match='unsupported_dom'):
+        await app.adapter.get_profile_connections('alice')
+
+
 async def test_connections_recognized_empty(app):
     app.document("/alice/following", '<div data-testid="primaryColumn"><div data-testid="emptyState">None yet</div></div>')
     result = await app.adapter.get_profile_connections("alice")

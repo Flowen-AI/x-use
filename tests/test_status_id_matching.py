@@ -42,6 +42,12 @@ class TestExtractStatusId:
             "https://x.com/user",
             "https://x.com/user/statuses/",  # no digits
             "https://x.com/i/communities/123",
+            "https://evil.example/u/status/123",
+            "https://x.com.evil.example/u/status/123",
+            "https://x.com/u/status/123abc",
+            "https://x.com/search?q=/u/status/123",
+            "https://credential@x.com/u/status/123",
+            "http://x.com/u/status/123",
         ],
     )
     def test_returns_none_without_status_digits(self, href):
@@ -105,6 +111,21 @@ class TestFindArticleWithStatusId:
                 raise RuntimeError("dom went away")
 
         assert find_article_with_status_id(BoomDriver(), "123") is None
+
+    def test_multiple_primary_ids_are_ambiguous_and_not_selected(self):
+        driver = _Driver([_Article(['https://x.com/u/status/123', 'https://x.com/u/status/999'])])
+        assert find_article_with_status_id(driver, '123') is None
+
+    def test_text_or_quote_link_does_not_identify_outer_article(self):
+        class QuotingArticle:
+            def find_elements(self, by, value):
+                if './/time' in value and "not(ancestor::*[@role='link'])" in value:
+                    return [_Link('https://x.com/outer/status/999')]
+                return [_Link('https://x.com/outer/status/999'), _Link('https://x.com/quoted/status/123')]
+
+        driver = _Driver([QuotingArticle()])
+        assert find_article_with_status_id(driver, '123') is None
+        assert find_article_with_status_id(driver, '999') is driver._articles[0]
 
 
 class TestParseTweetCardIdExtraction:

@@ -33,4 +33,5 @@ _REASONS = frozenset({
     "account_locked", "session_expired", "conversation_mismatch", "recipient_mismatch",
     "send_disabled", "composer_not_empty", "send_unconfirmed", "unlock_failed",
     "recipient_blocked", "recipient_unverified", "profile_mismatch",
+    "stale_review", "ownership_unverified", "feature_unavailable",
 })

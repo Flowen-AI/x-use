@@ -1,0 +1,1492 @@
+{
+  "pytest_exit_code": 0,
+  "scope": "in-process FastMCP.call_tool in passing isolated tests",
+  "live_X_verified": false,
+  "arguments_or_payloads_recorded": false,
+  "tool_count": 82,
+  "tools": [
+    {
+      "tool": "add_account",
+      "calls_in_passing_tests": 15,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 7,
+        "error": 8,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_accounts_cookie_orphan.py::test_add_account_failed_mutation_leaves_no_cookie_orphan",
+        "tests/mcp/test_accounts_cookie_orphan.py::test_add_account_rejects_malformed_proxy",
+        "tests/mcp/test_accounts_cookie_orphan.py::test_inplace_cookie_file_survives_failed_mutation",
+        "tests/mcp/test_accounts_cookie_orphan.py::test_successful_mutation_keeps_imported_cookies",
+        "tests/mcp/test_accounts_tools.py::test_add_account_cookie_source_already_at_convention_path",
+        "tests/mcp/test_accounts_tools.py::test_add_account_rejects_duplicate",
+        "tests/mcp/test_accounts_tools.py::test_add_account_rejects_invalid_cookie_file",
+        "tests/mcp/test_accounts_tools.py::test_add_account_rejects_unsafe_id",
+        "tests/mcp/test_accounts_tools.py::test_add_account_with_cookie_import",
+        "tests/mcp/test_accounts_tools.py::test_add_account_writes_disk_and_refreshes_loader",
+        "tests/mcp/test_cookie_import_rollback.py::test_failed_add_still_removes_a_newly_created_cookie_file",
+        "tests/mcp/test_persona.py::test_add_account_with_persona",
+        "tests/mcp/test_persona.py::test_get_account_returns_persona",
+        "tests/mcp/test_persona.py::test_persona_over_4000_chars_rejected",
+        "tests/mcp/test_persona.py::test_update_and_clear_persona"
+      ]
+    },
+    {
+      "tool": "add_campaign_leads",
+      "calls_in_passing_tests": 8,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 8,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_confirmed_send_bookkeeping_crash_is_repaired_without_resend",
+        "tests/mcp/test_playwright_integration.py::test_opt_out_between_preparation_and_approval_suppresses_send",
+        "tests/mcp/test_playwright_integration.py::test_pause_during_browser_navigation_is_rechecked_at_send",
+        "tests/mcp/test_playwright_integration.py::test_paused_campaign_preserves_pending_draft_and_recovers",
+        "tests/mcp/test_playwright_integration.py::test_repeating_old_not_sent_reconciliation_does_not_release_new_draft",
+        "tests/mcp/test_playwright_integration.py::test_uncertain_campaign_requires_reconciliation_and_never_auto_retries",
+        "tests/outreach/test_outreach_tools.py::test_active_account_preparation_and_account_isolation",
+        "tests/outreach/test_outreach_tools.py::test_local_tools_workflow_stages_even_with_draft_mode_off"
+      ]
+    },
+    {
+      "tool": "add_proxy",
+      "calls_in_passing_tests": 5,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_proxy_tools.py::test_add_proxy_accepts_env_interpolated",
+        "tests/mcp/test_proxy_tools.py::test_add_proxy_appends_and_dedupes",
+        "tests/mcp/test_proxy_tools.py::test_add_proxy_creates_pool_and_validates_scheme"
+      ]
+    },
+    {
+      "tool": "approve_draft",
+      "calls_in_passing_tests": 112,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 27,
+        "error": 75,
+        "raised": 10,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_audit_regressions.py::test_confirmed_write_retains_action_id_if_draft_outcome_append_fails",
+        "tests/mcp/test_contract.py::test_unknown_draft_id_returns_error_envelope",
+        "tests/mcp/test_control_tools.py::test_conversation_draft_preserves_native_reference",
+        "tests/mcp/test_control_tools.py::test_paused_account_does_not_execute_control",
+        "tests/mcp/test_control_tools.py::test_review_dispatch_and_duplicate_approval",
+        "tests/mcp/test_control_tools.py::test_uncertain_control_cannot_be_retried",
+        "tests/mcp/test_draft_outcome_evidence.py::test_error_words_cannot_mark_a_draft_executed",
+        "tests/mcp/test_drafts.py::test_approve_draft_executes_exactly_once",
+        "tests/mcp/test_drafts.py::test_approve_unknown_draft_id_rejected",
+        "tests/mcp/test_drafts.py::test_drafts_persist_to_tmp_jsonl_and_reload",
+        "tests/mcp/test_exec_robustness.py::test_dedup_rejection_on_reapproval_marks_draft_executed_not_failed",
+        "tests/mcp/test_exec_robustness.py::test_genuine_execution_failure_still_marks_draft_failed",
+        "tests/mcp/test_playwright_integration.py::test_client_cancellation_before_denied_reservation_keeps_draft_pending",
+        "tests/mcp/test_playwright_integration.py::test_client_cancellation_preserves_uncertain_send_for_reconciliation",
+        "tests/mcp/test_playwright_integration.py::test_confirmed_send_bookkeeping_crash_is_repaired_without_resend",
+        "tests/mcp/test_playwright_integration.py::test_dm_always_drafts_then_approves_exact_payload",
+        "tests/mcp/test_playwright_integration.py::test_old_plain_draft_reconciliation_cannot_replace_newer_outcome",
+        "tests/mcp/test_playwright_integration.py::test_opt_out_between_preparation_and_approval_suppresses_send",
+        "tests/mcp/test_playwright_integration.py::test_opt_out_during_follow_navigation_prevents_click",
+        "tests/mcp/test_playwright_integration.py::test_pause_during_browser_navigation_is_rechecked_at_send",
+        "tests/mcp/test_playwright_integration.py::test_paused_campaign_preserves_pending_draft_and_recovers",
+        "tests/mcp/test_playwright_integration.py::test_repeat_not_sent_cannot_reopen_rejected_plain_draft",
+        "tests/mcp/test_playwright_integration.py::test_repeated_cancellation_settles_ledger_before_releasing_account",
+        "tests/mcp/test_playwright_integration.py::test_repeated_cancellation_settles_pause_bookkeeping",
+        "tests/mcp/test_playwright_integration.py::test_repeating_old_not_sent_reconciliation_does_not_release_new_draft",
+        "tests/mcp/test_playwright_integration.py::test_running_send_cannot_be_reconciled_until_it_finishes",
+        "tests/mcp/test_playwright_integration.py::test_send_timeout_preserves_action_id_and_prevents_retry",
+        "tests/mcp/test_playwright_integration.py::test_uncertain_campaign_requires_reconciliation_and_never_auto_retries",
+        "tests/mcp/test_sessions.py::test_approve_draft_refuses_paused_account",
+        "tests/mcp/test_support_tools.py::test_reject_draft_blocks_approval",
+        "tests/mcp/test_thread_reconciliation.py::test_single_action_reconciliation_keeps_authoritative_thread_status",
+        "tests/mcp/test_thread_reject.py::test_reject_cannot_claim_success_during_pending_thread_continuation",
+        "tests/mcp/test_thread_reject.py::test_reject_pending_blocked_thread_revokes_durable_authorization",
+        "tests/mcp/test_thread_tools.py::test_integrated_approval_partial_never_marks_executed",
+        "tests/mcp/test_thread_tools.py::test_integrated_zero_write_block_and_uncertainty_status"
+      ]
+    },
+    {
+      "tool": "bookmark_tweet",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_paused_account_does_not_execute_control",
+        "tests/mcp/test_control_tools.py::test_review_dispatch_and_duplicate_approval",
+        "tests/mcp/test_control_tools.py::test_uncertain_control_cannot_be_retried"
+      ]
+    },
+    {
+      "tool": "cancel_queued_action",
+      "calls_in_passing_tests": 5,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_queue_recovery.py::test_queue_reconciliation_survives_restart_without_replay",
+        "tests/mcp/test_queue_tools.py::test_cancel_queued_action_transitions",
+        "tests/mcp/test_queue_tools.py::test_cancel_unknown_queue_id"
+      ]
+    },
+    {
+      "tool": "cancel_thread",
+      "calls_in_passing_tests": 8,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 6,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_thread_reconciliation.py::test_single_action_reconciliation_keeps_authoritative_thread_status",
+        "tests/mcp/test_thread_tools.py::test_cancel_busy_cannot_interrupt_claimed_send",
+        "tests/mcp/test_thread_tools.py::test_cancel_complete_noop_and_unknown_error",
+        "tests/mcp/test_thread_tools.py::test_cancel_partial_persists_revocation_without_external_calls",
+        "tests/mcp/test_thread_tools.py::test_cancel_uncertain_retains_safety_and_segment_evidence"
+      ]
+    },
+    {
+      "tool": "close_session",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_full_wrapper_workflows.py::test_profile_feed_and_session_wrappers"
+      ]
+    },
+    {
+      "tool": "continue_thread",
+      "calls_in_passing_tests": 20,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 19,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_thread_reconciliation.py::test_single_action_reconciliation_keeps_authoritative_thread_status",
+        "tests/mcp/test_thread_reject.py::test_reject_cannot_claim_success_during_pending_thread_continuation",
+        "tests/mcp/test_thread_reject.py::test_reject_pending_blocked_thread_revokes_durable_authorization",
+        "tests/mcp/test_thread_tools.py::test_always_drafts_exact_review_and_no_llm",
+        "tests/mcp/test_thread_tools.py::test_ambiguous_confirmation_never_retries",
+        "tests/mcp/test_thread_tools.py::test_cancel_partial_persists_revocation_without_external_calls",
+        "tests/mcp/test_thread_tools.py::test_crash_in_flight_restart_does_not_resend",
+        "tests/mcp/test_thread_tools.py::test_daily_cap_recovers_without_repeated_publish",
+        "tests/mcp/test_thread_tools.py::test_integrated_approval_partial_never_marks_executed",
+        "tests/mcp/test_thread_tools.py::test_integrated_zero_write_block_and_uncertainty_status",
+        "tests/mcp/test_thread_tools.py::test_spacing_partial_restart_and_resume_exact_next_part",
+        "tests/mcp/test_thread_tools.py::test_unknown_browser_outcome_stops_and_never_repeats"
+      ]
+    },
+    {
+      "tool": "create_campaign",
+      "calls_in_passing_tests": 9,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 8,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_confirmed_send_bookkeeping_crash_is_repaired_without_resend",
+        "tests/mcp/test_playwright_integration.py::test_opt_out_between_preparation_and_approval_suppresses_send",
+        "tests/mcp/test_playwright_integration.py::test_pause_during_browser_navigation_is_rechecked_at_send",
+        "tests/mcp/test_playwright_integration.py::test_paused_campaign_preserves_pending_draft_and_recovers",
+        "tests/mcp/test_playwright_integration.py::test_repeating_old_not_sent_reconciliation_does_not_release_new_draft",
+        "tests/mcp/test_playwright_integration.py::test_uncertain_campaign_requires_reconciliation_and_never_auto_retries",
+        "tests/outreach/test_outreach_tools.py::test_active_account_preparation_and_account_isolation",
+        "tests/outreach/test_outreach_tools.py::test_local_tools_workflow_stages_even_with_draft_mode_off",
+        "tests/outreach/test_outreach_tools.py::test_opt_out_and_bad_templates_return_sanitized_envelopes"
+      ]
+    },
+    {
+      "tool": "delete_tweet",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_paused_account_does_not_execute_control",
+        "tests/mcp/test_control_tools.py::test_review_dispatch_and_duplicate_approval",
+        "tests/mcp/test_control_tools.py::test_uncertain_control_cannot_be_retried"
+      ]
+    },
+    {
+      "tool": "draft_post_variations",
+      "calls_in_passing_tests": 2,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 2,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_composite_tools.py::test_draft_post_variations_caps_count",
+        "tests/mcp/test_composite_tools.py::test_draft_post_variations_stages_n_drafts"
+      ]
+    },
+    {
+      "tool": "edit_tweet",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_paused_account_does_not_execute_control",
+        "tests/mcp/test_control_tools.py::test_review_dispatch_and_duplicate_approval",
+        "tests/mcp/test_control_tools.py::test_uncertain_control_cannot_be_retried"
+      ]
+    },
+    {
+      "tool": "engage",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_contract.py::test_engage_rejects_unsupported_action",
+        "tests/mcp/test_engage_partial_results.py::test_tool_error_still_recorded_as_structured_failure",
+        "tests/mcp/test_engage_partial_results.py::test_unexpected_exception_records_failure_and_keeps_prior_results",
+        "tests/mcp/test_read_spacing.py::test_multiple_keywords_wait_for_read_spacing"
+      ]
+    },
+    {
+      "tool": "follow_profile",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_opt_out_during_follow_navigation_prevents_click"
+      ]
+    },
+    {
+      "tool": "generate_and_post",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_full_wrapper_workflows.py::test_generated_draft_and_explicit_reply_survive_review"
+      ]
+    },
+    {
+      "tool": "get_account",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_accounts_tools.py::test_get_account_masks_secrets",
+        "tests/mcp/test_accounts_tools.py::test_get_account_unknown_envelope",
+        "tests/mcp/test_persona.py::test_accounts_without_persona_still_valid",
+        "tests/mcp/test_persona.py::test_get_account_returns_persona"
+      ]
+    },
+    {
+      "tool": "get_account_analytics",
+      "calls_in_passing_tests": 9,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 3,
+        "error": 6,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_analytics_inbox_tools.py::test_analytics_has_readonly_annotation_and_distinct_scope",
+        "tests/mcp/test_analytics_inbox_tools.py::test_analytics_login_block_is_structured_and_pauses_reads",
+        "tests/mcp/test_analytics_inbox_tools.py::test_analytics_pin_safe_read_does_not_clear_durable_pause",
+        "tests/mcp/test_analytics_inbox_tools.py::test_analytics_refuses_legacy_backend_without_startup",
+        "tests/mcp/test_analytics_inbox_tools.py::test_analytics_requires_active_configured_account",
+        "tests/mcp/test_analytics_inbox_tools.py::test_invalid_options_fail_before_read_policy_reservation",
+        "tests/mcp/test_analytics_inbox_tools.py::test_registered_reads_forward_options_once_and_do_not_stage"
+      ]
+    },
+    {
+      "tool": "get_account_health",
+      "calls_in_passing_tests": 7,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 6,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_bounded_local_reads.py::test_health_rejects_non_object_metrics",
+        "tests/mcp/test_october_audit.py::test_health_validates_inline_cookies",
+        "tests/mcp/test_support_tools.py::test_get_account_health_aggregates",
+        "tests/mcp/test_support_tools.py::test_get_account_health_unknown_account",
+        "tests/mcp/test_support_tools.py::test_health_reports_invalid_config_instead_of_failing",
+        "tests/mcp/test_support_tools.py::test_health_surfaces_corrupt_settings"
+      ]
+    },
+    {
+      "tool": "get_account_safety",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_full_wrapper_workflows.py::test_profile_feed_and_session_wrappers"
+      ]
+    },
+    {
+      "tool": "get_bookmarks",
+      "calls_in_passing_tests": 2,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 1,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_new_read_controls"
+      ]
+    },
+    {
+      "tool": "get_campaign",
+      "calls_in_passing_tests": 0,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 0,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": []
+    },
+    {
+      "tool": "get_campaign_summary",
+      "calls_in_passing_tests": 0,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 0,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": []
+    },
+    {
+      "tool": "get_conversation",
+      "calls_in_passing_tests": 3,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 1,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_analytics_inbox_tools.py::test_invalid_options_fail_before_read_policy_reservation",
+        "tests/mcp/test_analytics_inbox_tools.py::test_registered_reads_forward_options_once_and_do_not_stage"
+      ]
+    },
+    {
+      "tool": "get_conversation_controls",
+      "calls_in_passing_tests": 2,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 1,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_new_read_controls"
+      ]
+    },
+    {
+      "tool": "get_draft",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_full_wrapper_workflows.py::test_generated_draft_and_explicit_reply_survive_review",
+        "tests/mcp/test_support_tools.py::test_get_draft_round_trip"
+      ]
+    },
+    {
+      "tool": "get_home_feed",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_full_wrapper_workflows.py::test_profile_feed_and_session_wrappers"
+      ]
+    },
+    {
+      "tool": "get_inbox",
+      "calls_in_passing_tests": 5,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 3,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_analytics_inbox_tools.py::test_invalid_options_fail_before_read_policy_reservation",
+        "tests/mcp/test_analytics_inbox_tools.py::test_registered_reads_forward_options_once_and_do_not_stage"
+      ]
+    },
+    {
+      "tool": "get_lead",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 0,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/outreach/test_outreach_tools.py::test_active_account_preparation_and_account_isolation"
+      ]
+    },
+    {
+      "tool": "get_metrics",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 4,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_bounded_local_reads.py::test_metrics_tail_does_not_read_whole_file",
+        "tests/mcp/test_exec_robustness.py::test_get_metrics_valid_summary_is_returned_verbatim",
+        "tests/mcp/test_exec_robustness.py::test_get_metrics_wrong_shape_returns_default_summary_and_warning",
+        "tests/mcp/test_sessions.py::test_read_only_tools_never_create_a_session"
+      ]
+    },
+    {
+      "tool": "get_notifications",
+      "calls_in_passing_tests": 8,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 3,
+        "error": 3,
+        "raised": 2,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_notifications_tools.py::test_notifications_invalid_options_fail_before_browser",
+        "tests/mcp/test_notifications_tools.py::test_notifications_legacy_backend_disabled_without_startup",
+        "tests/mcp/test_notifications_tools.py::test_notifications_options_forwarded_once_with_unknown_state",
+        "tests/mcp/test_notifications_tools.py::test_notifications_protocol_schema_and_read_annotation"
+      ]
+    },
+    {
+      "tool": "get_profile",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_full_wrapper_workflows.py::test_profile_feed_and_session_wrappers"
+      ]
+    },
+    {
+      "tool": "get_profile_connections",
+      "calls_in_passing_tests": 24,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 9,
+        "error": 15,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_profile_read_tools.py::test_connections_accept_only_public_relationships",
+        "tests/mcp/test_profile_read_tools.py::test_deactivation_while_acquiring_warm_session_prevents_the_read",
+        "tests/mcp/test_profile_read_tools.py::test_expired_browser_session_returns_safe_recovery_and_pauses_other_profile_reads",
+        "tests/mcp/test_profile_read_tools.py::test_inactive_warm_account_never_reserves_or_acquires_browser",
+        "tests/mcp/test_profile_read_tools.py::test_invalid_profile_fails_before_browser_or_budget_reservation",
+        "tests/mcp/test_profile_read_tools.py::test_manual_pause_during_warm_session_acquisition_prevents_the_read",
+        "tests/mcp/test_profile_read_tools.py::test_profile_forms_pass_only_the_exact_handle_to_browser",
+        "tests/mcp/test_profile_read_tools.py::test_profile_tools_share_normal_read_cooldown_and_account_budgets",
+        "tests/mcp/test_profile_read_tools.py::test_registered_defaults_match_bounded_browser_arguments",
+        "tests/mcp/test_profile_read_tools.py::test_shared_manual_pause_blocks_every_profile_read",
+        "tests/mcp/test_profile_read_tools.py::test_unsupported_options_fail_before_browser_or_budget_reservation"
+      ]
+    },
+    {
+      "tool": "get_profile_context",
+      "calls_in_passing_tests": 21,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 8,
+        "error": 13,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_profile_read_tools.py::test_deactivation_while_acquiring_warm_session_prevents_the_read",
+        "tests/mcp/test_profile_read_tools.py::test_expired_browser_session_returns_safe_recovery_and_pauses_other_profile_reads",
+        "tests/mcp/test_profile_read_tools.py::test_inactive_warm_account_never_reserves_or_acquires_browser",
+        "tests/mcp/test_profile_read_tools.py::test_invalid_profile_fails_before_browser_or_budget_reservation",
+        "tests/mcp/test_profile_read_tools.py::test_manual_pause_during_warm_session_acquisition_prevents_the_read",
+        "tests/mcp/test_profile_read_tools.py::test_profile_forms_pass_only_the_exact_handle_to_browser",
+        "tests/mcp/test_profile_read_tools.py::test_profile_tools_share_normal_read_cooldown_and_account_budgets",
+        "tests/mcp/test_profile_read_tools.py::test_raw_dom_is_excluded_before_json_serialization",
+        "tests/mcp/test_profile_read_tools.py::test_registered_defaults_match_bounded_browser_arguments",
+        "tests/mcp/test_profile_read_tools.py::test_shared_manual_pause_blocks_every_profile_read",
+        "tests/mcp/test_profile_read_tools.py::test_unsupported_options_fail_before_browser_or_budget_reservation"
+      ]
+    },
+    {
+      "tool": "get_profile_posts",
+      "calls_in_passing_tests": 26,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 11,
+        "error": 15,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_profile_read_tools.py::test_deactivation_while_acquiring_warm_session_prevents_the_read",
+        "tests/mcp/test_profile_read_tools.py::test_inactive_warm_account_never_reserves_or_acquires_browser",
+        "tests/mcp/test_profile_read_tools.py::test_invalid_profile_fails_before_browser_or_budget_reservation",
+        "tests/mcp/test_profile_read_tools.py::test_manual_pause_during_warm_session_acquisition_prevents_the_read",
+        "tests/mcp/test_profile_read_tools.py::test_posts_accept_all_documented_feeds_and_preserve_partial_pagination",
+        "tests/mcp/test_profile_read_tools.py::test_profile_forms_pass_only_the_exact_handle_to_browser",
+        "tests/mcp/test_profile_read_tools.py::test_profile_tools_share_normal_read_cooldown_and_account_budgets",
+        "tests/mcp/test_profile_read_tools.py::test_raw_dom_is_excluded_before_json_serialization",
+        "tests/mcp/test_profile_read_tools.py::test_registered_defaults_match_bounded_browser_arguments",
+        "tests/mcp/test_profile_read_tools.py::test_shared_manual_pause_blocks_every_profile_read",
+        "tests/mcp/test_profile_read_tools.py::test_unsupported_options_fail_before_browser_or_budget_reservation"
+      ]
+    },
+    {
+      "tool": "get_run_status",
+      "calls_in_passing_tests": 3,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 2,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_support_tools.py::test_get_run_status_lists_and_filters"
+      ]
+    },
+    {
+      "tool": "get_runtime_info",
+      "calls_in_passing_tests": 5,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 5,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_october_audit.py::test_runtime_info_does_not_claim_durable_threads_without_store",
+        "tests/mcp/test_october_audit.py::test_runtime_info_is_local_and_contains_no_account_data",
+        "tests/mcp/test_october_audit.py::test_runtime_info_reports_backend_constraints_without_starting_browser"
+      ]
+    },
+    {
+      "tool": "get_session_status",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_full_wrapper_workflows.py::test_profile_feed_and_session_wrappers"
+      ]
+    },
+    {
+      "tool": "get_thread",
+      "calls_in_passing_tests": 8,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 2,
+        "error": 6,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_thread_context.py::test_bad_context_input_does_not_acquire_browser",
+        "tests/mcp/test_thread_context.py::test_paused_thread_read_stops_before_browser",
+        "tests/mcp/test_thread_context.py::test_registered_thread_preserves_context_without_raw_dom_or_llm",
+        "tests/mcp/test_thread_context.py::test_thread_image_content_maps_to_exact_post"
+      ]
+    },
+    {
+      "tool": "get_thread_run",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_thread_tools.py::test_spacing_partial_restart_and_resume_exact_next_part"
+      ]
+    },
+    {
+      "tool": "get_tweet",
+      "calls_in_passing_tests": 5,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 5,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_media_tools.py::test_get_tweet_attaches_image_content",
+        "tests/mcp/test_media_tools.py::test_get_tweet_envelope_and_images",
+        "tests/mcp/test_media_tools.py::test_get_tweet_without_images_returns_media_urls_only",
+        "tests/mcp/test_october_audit.py::test_media_only_post_is_valid_context",
+        "tests/mcp/test_october_audit.py::test_unknown_public_counts_remain_unknown"
+      ]
+    },
+    {
+      "tool": "list_accounts",
+      "calls_in_passing_tests": 3,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_accounts_tools.py::test_add_account_writes_disk_and_refreshes_loader",
+        "tests/mcp/test_accounts_tools.py::test_remove_account_removes_and_refreshes",
+        "tests/mcp/test_sessions.py::test_read_only_tools_never_create_a_session"
+      ]
+    },
+    {
+      "tool": "list_campaigns",
+      "calls_in_passing_tests": 0,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 0,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": []
+    },
+    {
+      "tool": "list_drafts",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_composite_tools.py::test_research_and_stage_stages_relevant_drafts",
+        "tests/mcp/test_support_tools.py::test_list_drafts_newest_first_and_filter",
+        "tests/mcp/test_support_tools.py::test_list_drafts_rejects_bad_status"
+      ]
+    },
+    {
+      "tool": "list_leads",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 0,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/outreach/test_outreach_tools.py::test_active_account_preparation_and_account_isolation"
+      ]
+    },
+    {
+      "tool": "list_proxies",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_proxy_tools.py::test_list_proxies_masks_credentials"
+      ]
+    },
+    {
+      "tool": "list_queue",
+      "calls_in_passing_tests": 8,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 5,
+        "error": 3,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_queue_tools.py::test_list_queue_returns_items_and_counts",
+        "tests/mcp/test_queue_tools.py::test_queue_pagination_rejects_invalid_inputs",
+        "tests/mcp/test_queue_tools.py::test_queue_response_is_bounded_and_all_pages_accessible"
+      ]
+    },
+    {
+      "tool": "manage_conversation",
+      "calls_in_passing_tests": 15,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 14,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_conversation_draft_preserves_native_reference",
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_paused_account_does_not_execute_control",
+        "tests/mcp/test_control_tools.py::test_review_dispatch_and_duplicate_approval",
+        "tests/mcp/test_control_tools.py::test_uncertain_control_cannot_be_retried"
+      ]
+    },
+    {
+      "tool": "opt_out_lead",
+      "calls_in_passing_tests": 2,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 2,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_opt_out_between_preparation_and_approval_suppresses_send",
+        "tests/outreach/test_outreach_tools.py::test_opt_out_and_bad_templates_return_sanitized_envelopes"
+      ]
+    },
+    {
+      "tool": "pause_account_actions",
+      "calls_in_passing_tests": 2,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 2,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_new_manual_pause_survives_successful_inflight_recovery"
+      ]
+    },
+    {
+      "tool": "post_tweet",
+      "calls_in_passing_tests": 21,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 18,
+        "error": 3,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_audit_regressions.py::test_confirmed_write_retains_action_id_if_draft_outcome_append_fails",
+        "tests/mcp/test_contract.py::test_empty_tweet_text_returns_error_envelope",
+        "tests/mcp/test_contract.py::test_unknown_account_returns_error_envelope",
+        "tests/mcp/test_draft_outcome_evidence.py::test_error_words_cannot_mark_a_draft_executed",
+        "tests/mcp/test_drafts.py::test_approve_draft_executes_exactly_once",
+        "tests/mcp/test_drafts.py::test_drafts_persist_to_tmp_jsonl_and_reload",
+        "tests/mcp/test_drafts.py::test_write_tool_returns_draft_and_executes_nothing",
+        "tests/mcp/test_exec_robustness.py::test_dedup_rejection_on_reapproval_marks_draft_executed_not_failed",
+        "tests/mcp/test_exec_robustness.py::test_genuine_execution_failure_still_marks_draft_failed",
+        "tests/mcp/test_playwright_integration.py::test_post_search_and_queue_use_async_backend_and_same_budget",
+        "tests/mcp/test_sessions.py::test_approve_draft_refuses_paused_account",
+        "tests/mcp/test_sessions.py::test_direct_write_refuses_paused_account",
+        "tests/mcp/test_sessions.py::test_first_write_tool_cold_starts_then_reuses_warm_session",
+        "tests/mcp/test_support_tools.py::test_get_draft_round_trip",
+        "tests/mcp/test_support_tools.py::test_list_drafts_newest_first_and_filter",
+        "tests/mcp/test_support_tools.py::test_reject_draft_blocks_approval"
+      ]
+    },
+    {
+      "tool": "prepare_campaign_messages",
+      "calls_in_passing_tests": 12,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 11,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_confirmed_send_bookkeeping_crash_is_repaired_without_resend",
+        "tests/mcp/test_playwright_integration.py::test_opt_out_between_preparation_and_approval_suppresses_send",
+        "tests/mcp/test_playwright_integration.py::test_pause_during_browser_navigation_is_rechecked_at_send",
+        "tests/mcp/test_playwright_integration.py::test_paused_campaign_preserves_pending_draft_and_recovers",
+        "tests/mcp/test_playwright_integration.py::test_repeating_old_not_sent_reconciliation_does_not_release_new_draft",
+        "tests/mcp/test_playwright_integration.py::test_uncertain_campaign_requires_reconciliation_and_never_auto_retries",
+        "tests/outreach/test_outreach_tools.py::test_active_account_preparation_and_account_isolation",
+        "tests/outreach/test_outreach_tools.py::test_local_tools_workflow_stages_even_with_draft_mode_off"
+      ]
+    },
+    {
+      "tool": "prepare_outreach",
+      "calls_in_passing_tests": 27,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 7,
+        "error": 20,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_workflow_tools.py::test_account_optout_prevents_read_and_draft_but_other_account_remains_eligible",
+        "tests/mcp/test_workflow_tools.py::test_context_preserves_only_supported_partial_pagination",
+        "tests/mcp/test_workflow_tools.py::test_context_read_failure_never_leaves_a_draft",
+        "tests/mcp/test_workflow_tools.py::test_eligibility_is_rechecked_after_context_read",
+        "tests/mcp/test_workflow_tools.py::test_invalid_or_inactive_input_fails_before_read_or_draft",
+        "tests/mcp/test_workflow_tools.py::test_legacy_backend_is_explicitly_unsupported_without_side_effects",
+        "tests/mcp/test_workflow_tools.py::test_one_context_read_creates_exact_pending_draft_with_clear_next_steps",
+        "tests/mcp/test_workflow_tools.py::test_policy_pause_blocks_context_and_drafting",
+        "tests/mcp/test_workflow_tools.py::test_unverified_context_is_rejected_without_private_error_data"
+      ]
+    },
+    {
+      "tool": "prepare_reply",
+      "calls_in_passing_tests": 5,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 3,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_media_tools.py::test_prepare_reply_gains_media_and_persona",
+        "tests/mcp/test_october_audit.py::test_media_only_post_is_valid_context",
+        "tests/mcp/test_prepare_reply.py::test_prepare_reply_rejects_bad_url",
+        "tests/mcp/test_prepare_reply.py::test_prepare_reply_returns_context_without_llm",
+        "tests/mcp/test_prepare_reply.py::test_prepare_reply_unknown_account"
+      ]
+    },
+    {
+      "tool": "prepare_thread",
+      "calls_in_passing_tests": 37,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 29,
+        "error": 8,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_thread_reconciliation.py::test_single_action_reconciliation_keeps_authoritative_thread_status",
+        "tests/mcp/test_thread_reject.py::test_reject_cannot_claim_success_during_pending_thread_continuation",
+        "tests/mcp/test_thread_reject.py::test_reject_pending_blocked_thread_revokes_durable_authorization",
+        "tests/mcp/test_thread_reject.py::test_reject_pending_interrupted_thread_retains_uncertain_evidence",
+        "tests/mcp/test_thread_tools.py::test_all_parts_chain_only_to_new_confirmed_urls",
+        "tests/mcp/test_thread_tools.py::test_always_drafts_exact_review_and_no_llm",
+        "tests/mcp/test_thread_tools.py::test_ambiguous_confirmation_never_retries",
+        "tests/mcp/test_thread_tools.py::test_cancel_busy_cannot_interrupt_claimed_send",
+        "tests/mcp/test_thread_tools.py::test_cancel_complete_noop_and_unknown_error",
+        "tests/mcp/test_thread_tools.py::test_cancel_partial_persists_revocation_without_external_calls",
+        "tests/mcp/test_thread_tools.py::test_cancel_uncertain_retains_safety_and_segment_evidence",
+        "tests/mcp/test_thread_tools.py::test_concurrent_approval_and_refresh_cannot_repeat_submit",
+        "tests/mcp/test_thread_tools.py::test_crash_in_flight_restart_does_not_resend",
+        "tests/mcp/test_thread_tools.py::test_daily_cap_recovers_without_repeated_publish",
+        "tests/mcp/test_thread_tools.py::test_draft_tampering_prevents_all_writes",
+        "tests/mcp/test_thread_tools.py::test_input_bounds_and_bad_media_cannot_create_draft",
+        "tests/mcp/test_thread_tools.py::test_integrated_approval_partial_never_marks_executed",
+        "tests/mcp/test_thread_tools.py::test_integrated_zero_write_block_and_uncertainty_status",
+        "tests/mcp/test_thread_tools.py::test_media_rechecked_before_later_segment",
+        "tests/mcp/test_thread_tools.py::test_media_review_reply_forwarding_and_changed_file_preflight",
+        "tests/mcp/test_thread_tools.py::test_prepare_refuses_inactive_or_unsupported_backend",
+        "tests/mcp/test_thread_tools.py::test_spacing_partial_restart_and_resume_exact_next_part",
+        "tests/mcp/test_thread_tools.py::test_unknown_browser_outcome_stops_and_never_repeats"
+      ]
+    },
+    {
+      "tool": "preview_campaign_message",
+      "calls_in_passing_tests": 0,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 0,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": []
+    },
+    {
+      "tool": "process_queue",
+      "calls_in_passing_tests": 22,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 17,
+        "error": 5,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_post_search_and_queue_use_async_backend_and_same_budget",
+        "tests/mcp/test_queue_recovery.py::test_each_queue_write_reserves_identity_before_browser_execution",
+        "tests/mcp/test_queue_recovery.py::test_ledger_reference_repairs_queue_after_journal_write_failure",
+        "tests/mcp/test_queue_recovery.py::test_process_exit_during_executor_retains_queue_reservation",
+        "tests/mcp/test_queue_recovery.py::test_queue_reconciliation_survives_restart_without_replay",
+        "tests/mcp/test_queue_tools.py::test_process_queue_drains_via_injected_runner",
+        "tests/mcp/test_queue_tools.py::test_process_queue_unknown_account_envelope",
+        "tests/mcp/test_queue_tools_keys.py::test_process_queue_on_paused_account_defers_without_executing",
+        "tests/mcp/test_queue_tools_keys.py::test_process_queue_rejects_max_actions_zero",
+        "tests/mcp/test_queue_tools_keys.py::test_process_queue_rejects_negative_max_actions"
+      ]
+    },
+    {
+      "tool": "queue_engagement",
+      "calls_in_passing_tests": 8,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 5,
+        "error": 3,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_queue_recovery.py::test_each_queue_write_reserves_identity_before_browser_execution",
+        "tests/mcp/test_queue_tools.py::test_queue_engagement_like_stores_tweet_fields",
+        "tests/mcp/test_queue_tools.py::test_queue_engagement_rejects_paused_account",
+        "tests/mcp/test_queue_tools.py::test_queue_engagement_rejects_unknown_action",
+        "tests/mcp/test_queue_tools.py::test_queue_engagement_reply_requires_text",
+        "tests/mcp/test_queue_tools.py::test_queue_reply_auto_generates_text_now"
+      ]
+    },
+    {
+      "tool": "queue_post",
+      "calls_in_passing_tests": 26,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 21,
+        "error": 5,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_post_search_and_queue_use_async_backend_and_same_budget",
+        "tests/mcp/test_queue_recovery.py::test_each_queue_write_reserves_identity_before_browser_execution",
+        "tests/mcp/test_queue_recovery.py::test_ledger_reference_repairs_queue_after_journal_write_failure",
+        "tests/mcp/test_queue_recovery.py::test_queue_reconciliation_survives_restart_without_replay",
+        "tests/mcp/test_queue_tools.py::test_cancel_queued_action_transitions",
+        "tests/mcp/test_queue_tools.py::test_list_queue_returns_items_and_counts",
+        "tests/mcp/test_queue_tools.py::test_process_queue_drains_via_injected_runner",
+        "tests/mcp/test_queue_tools.py::test_queue_post_duplicate_is_rejected",
+        "tests/mcp/test_queue_tools.py::test_queue_post_rejects_bad_not_before",
+        "tests/mcp/test_queue_tools.py::test_queue_post_rejects_paused_account",
+        "tests/mcp/test_queue_tools.py::test_queue_post_requires_exactly_one_of_text_or_topic",
+        "tests/mcp/test_queue_tools.py::test_queue_post_stores_full_payload",
+        "tests/mcp/test_queue_tools_keys.py::test_identical_text_media_community_is_a_duplicate",
+        "tests/mcp/test_queue_tools_keys.py::test_queue_post_dedup_key_format",
+        "tests/mcp/test_queue_tools_keys.py::test_queue_post_dedup_key_format_with_community",
+        "tests/mcp/test_queue_tools_keys.py::test_same_text_different_media_is_not_a_duplicate",
+        "tests/mcp/test_queue_tools_keys.py::test_same_text_with_community_is_not_a_duplicate"
+      ]
+    },
+    {
+      "tool": "reject_draft",
+      "calls_in_passing_tests": 10,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 8,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_full_wrapper_workflows.py::test_generated_draft_and_explicit_reply_survive_review",
+        "tests/mcp/test_playwright_integration.py::test_client_cancellation_before_denied_reservation_keeps_draft_pending",
+        "tests/mcp/test_playwright_integration.py::test_repeat_not_sent_cannot_reopen_rejected_plain_draft",
+        "tests/mcp/test_support_tools.py::test_reject_draft_blocks_approval",
+        "tests/mcp/test_support_tools.py::test_reject_draft_unknown_id",
+        "tests/mcp/test_thread_reject.py::test_reject_cannot_claim_success_during_pending_thread_continuation",
+        "tests/mcp/test_thread_reject.py::test_reject_pending_blocked_thread_revokes_durable_authorization",
+        "tests/mcp/test_thread_reject.py::test_reject_pending_interrupted_thread_retains_uncertain_evidence"
+      ]
+    },
+    {
+      "tool": "remove_account",
+      "calls_in_passing_tests": 2,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 1,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_accounts_tools.py::test_remove_account_removes_and_refreshes",
+        "tests/mcp/test_accounts_tools.py::test_remove_account_requires_confirm"
+      ]
+    },
+    {
+      "tool": "remove_bookmark",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_paused_account_does_not_execute_control",
+        "tests/mcp/test_control_tools.py::test_review_dispatch_and_duplicate_approval",
+        "tests/mcp/test_control_tools.py::test_uncertain_control_cannot_be_retried"
+      ]
+    },
+    {
+      "tool": "remove_proxy",
+      "calls_in_passing_tests": 2,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 1,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_proxy_tools.py::test_remove_proxy_requires_confirm_and_reports_affected"
+      ]
+    },
+    {
+      "tool": "reply_to_tweet",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 1,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_full_wrapper_workflows.py::test_generated_draft_and_explicit_reply_survive_review"
+      ]
+    },
+    {
+      "tool": "research_and_stage",
+      "calls_in_passing_tests": 7,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 2,
+        "error": 5,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_composite_tools.py::test_research_and_stage_refuses_paused_account",
+        "tests/mcp/test_composite_tools.py::test_research_and_stage_requires_llm",
+        "tests/mcp/test_composite_tools.py::test_research_and_stage_stages_relevant_drafts",
+        "tests/mcp/test_read_spacing.py::test_composite_budget_or_long_interval_refuses_without_sleep",
+        "tests/mcp/test_read_spacing.py::test_multiple_keywords_wait_for_read_spacing"
+      ]
+    },
+    {
+      "tool": "resolve_action_outcome",
+      "calls_in_passing_tests": 30,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 26,
+        "error": 4,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_client_cancellation_preserves_uncertain_send_for_reconciliation",
+        "tests/mcp/test_playwright_integration.py::test_confirmed_send_bookkeeping_crash_is_repaired_without_resend",
+        "tests/mcp/test_playwright_integration.py::test_old_plain_draft_reconciliation_cannot_replace_newer_outcome",
+        "tests/mcp/test_playwright_integration.py::test_repeat_not_sent_cannot_reopen_rejected_plain_draft",
+        "tests/mcp/test_playwright_integration.py::test_repeating_old_not_sent_reconciliation_does_not_release_new_draft",
+        "tests/mcp/test_playwright_integration.py::test_running_send_cannot_be_reconciled_until_it_finishes",
+        "tests/mcp/test_playwright_integration.py::test_uncertain_campaign_requires_reconciliation_and_never_auto_retries",
+        "tests/mcp/test_queue_recovery.py::test_ledger_reference_repairs_queue_after_journal_write_failure",
+        "tests/mcp/test_queue_recovery.py::test_old_reconciliation_cannot_replace_newer_queue_outcome",
+        "tests/mcp/test_queue_recovery.py::test_process_exit_during_executor_retains_queue_reservation",
+        "tests/mcp/test_queue_recovery.py::test_queue_reconciliation_survives_restart_without_replay",
+        "tests/mcp/test_queue_recovery.py::test_reconciliation_journal_failure_keeps_id_and_allows_repair",
+        "tests/mcp/test_queue_recovery.py::test_reconciliation_never_updates_another_accounts_queue",
+        "tests/mcp/test_thread_reconciliation.py::test_single_action_reconciliation_keeps_authoritative_thread_status"
+      ]
+    },
+    {
+      "tool": "resume_account_actions",
+      "calls_in_passing_tests": 5,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 1,
+        "error": 3,
+        "raised": 1,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_new_manual_pause_survives_successful_inflight_recovery",
+        "tests/mcp/test_playwright_integration.py::test_repeated_cancellation_settles_pause_bookkeeping",
+        "tests/mcp/test_playwright_integration.py::test_resume_probe_remains_bounded_by_read_budget",
+        "tests/mcp/test_playwright_integration.py::test_resume_requires_authenticated_readiness_and_shutdown_closes_pool",
+        "tests/mcp/test_profile_read_tools.py::test_explicit_recovery_keeps_its_narrow_pause_exemption"
+      ]
+    },
+    {
+      "tool": "run_cycle",
+      "calls_in_passing_tests": 3,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 1,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_contract.py::test_run_cycle_rejects_unknown_pipeline_with_canonical_names",
+        "tests/mcp/test_contract.py::test_run_cycle_without_accounts_returns_error_envelope",
+        "tests/mcp/test_full_wrapper_workflows.py::test_legacy_cycle_wrapper_tracks_completion_without_mutating_configuration"
+      ]
+    },
+    {
+      "tool": "search_conversations",
+      "calls_in_passing_tests": 3,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 1,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_analytics_inbox_tools.py::test_invalid_options_fail_before_read_policy_reservation",
+        "tests/mcp/test_analytics_inbox_tools.py::test_registered_reads_forward_options_once_and_do_not_stage"
+      ]
+    },
+    {
+      "tool": "search_profile",
+      "calls_in_passing_tests": 11,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 8,
+        "error": 3,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_search_profile.py::test_account_defaults_to_the_first_active_account",
+        "tests/mcp/test_search_profile.py::test_bad_handle_errors_before_a_session_is_acquired",
+        "tests/mcp/test_search_profile.py::test_foreign_host_errors_before_a_session_is_acquired",
+        "tests/mcp/test_search_profile.py::test_hostile_url_never_reaches_the_browser",
+        "tests/mcp/test_search_profile.py::test_limit_is_clamped_to_the_search_ceiling",
+        "tests/mcp/test_search_profile.py::test_returns_posts_and_canonicalizes_the_url",
+        "tests/mcp/test_search_profile.py::test_unknown_account_returns_error_envelope"
+      ]
+    },
+    {
+      "tool": "search_tweets",
+      "calls_in_passing_tests": 5,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 3,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_contract.py::test_cold_start_failure_returns_error_envelope_not_exception",
+        "tests/mcp/test_contract.py::test_search_tweets_unknown_account_returns_error_envelope",
+        "tests/mcp/test_media_tools.py::test_search_tweets_include_images_opt_in",
+        "tests/mcp/test_playwright_integration.py::test_post_search_and_queue_use_async_backend_and_same_budget"
+      ]
+    },
+    {
+      "tool": "send_message",
+      "calls_in_passing_tests": 17,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 16,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_client_cancellation_before_denied_reservation_keeps_draft_pending",
+        "tests/mcp/test_playwright_integration.py::test_client_cancellation_preserves_uncertain_send_for_reconciliation",
+        "tests/mcp/test_playwright_integration.py::test_dm_always_drafts_then_approves_exact_payload",
+        "tests/mcp/test_playwright_integration.py::test_old_plain_draft_reconciliation_cannot_replace_newer_outcome",
+        "tests/mcp/test_playwright_integration.py::test_opt_out_between_preparation_and_approval_suppresses_send",
+        "tests/mcp/test_playwright_integration.py::test_repeat_not_sent_cannot_reopen_rejected_plain_draft",
+        "tests/mcp/test_playwright_integration.py::test_repeated_cancellation_settles_ledger_before_releasing_account",
+        "tests/mcp/test_playwright_integration.py::test_repeated_cancellation_settles_pause_bookkeeping",
+        "tests/mcp/test_playwright_integration.py::test_running_send_cannot_be_reconciled_until_it_finishes",
+        "tests/mcp/test_playwright_integration.py::test_send_timeout_preserves_action_id_and_prevents_retry"
+      ]
+    },
+    {
+      "tool": "set_account_active",
+      "calls_in_passing_tests": 2,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 2,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_accounts_tools.py::test_set_account_active_toggles",
+        "tests/mcp/test_sessions.py::test_approve_draft_refuses_paused_account"
+      ]
+    },
+    {
+      "tool": "set_campaign_status",
+      "calls_in_passing_tests": 2,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 2,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_paused_campaign_preserves_pending_draft_and_recovers"
+      ]
+    },
+    {
+      "tool": "test_proxy",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 2,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_proxy_tools.py::test_test_proxy_fails_when_no_egress_ip",
+        "tests/mcp/test_proxy_tools.py::test_test_proxy_resolves_account_pool",
+        "tests/mcp/test_proxy_tools.py::test_test_proxy_uses_explicit_url_and_masks",
+        "tests/mcp/test_proxy_tools.py::test_test_proxy_without_target_errors"
+      ]
+    },
+    {
+      "tool": "undo_retweet",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_paused_account_does_not_execute_control",
+        "tests/mcp/test_control_tools.py::test_review_dispatch_and_duplicate_approval",
+        "tests/mcp/test_control_tools.py::test_uncertain_control_cannot_be_retried"
+      ]
+    },
+    {
+      "tool": "unfollow_profile",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_paused_account_does_not_execute_control",
+        "tests/mcp/test_control_tools.py::test_review_dispatch_and_duplicate_approval",
+        "tests/mcp/test_control_tools.py::test_uncertain_control_cannot_be_retried"
+      ]
+    },
+    {
+      "tool": "unlike_tweet",
+      "calls_in_passing_tests": 4,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 3,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_control_tools.py::test_invalid_control_input_never_starts_browser",
+        "tests/mcp/test_control_tools.py::test_paused_account_does_not_execute_control",
+        "tests/mcp/test_control_tools.py::test_review_dispatch_and_duplicate_approval",
+        "tests/mcp/test_control_tools.py::test_uncertain_control_cannot_be_retried"
+      ]
+    },
+    {
+      "tool": "unlock_inbox",
+      "calls_in_passing_tests": 3,
+      "successful_stdio_call": false,
+      "outcomes": {
+        "ok": 2,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_new_manual_pause_survives_successful_inflight_recovery",
+        "tests/mcp/test_playwright_integration.py::test_pin_never_enters_policy_database_or_tool_result",
+        "tests/mcp/test_profile_read_tools.py::test_explicit_recovery_keeps_its_narrow_pause_exemption"
+      ]
+    },
+    {
+      "tool": "update_account",
+      "calls_in_passing_tests": 11,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 9,
+        "error": 2,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_accounts_cookie_orphan.py::test_update_account_failed_mutation_leaves_no_cookie_orphan",
+        "tests/mcp/test_accounts_tools.py::test_cookie_refresh_replaces_older_inline_credentials",
+        "tests/mcp/test_accounts_tools.py::test_update_account_clear_proxy_with_empty_string",
+        "tests/mcp/test_accounts_tools.py::test_update_account_partial_and_closes_session",
+        "tests/mcp/test_composite_tools.py::test_persona_enters_reply_prompt",
+        "tests/mcp/test_cookie_import_rollback.py::test_failed_update_restores_the_live_cookie_file",
+        "tests/mcp/test_cookie_import_rollback.py::test_successful_update_replaces_cookies_and_leaves_no_backup",
+        "tests/mcp/test_media_tools.py::test_prepare_reply_gains_media_and_persona",
+        "tests/mcp/test_persona.py::test_update_and_clear_persona"
+      ]
+    },
+    {
+      "tool": "update_lead_status",
+      "calls_in_passing_tests": 1,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 0,
+        "error": 1,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/outreach/test_outreach_tools.py::test_opt_out_and_bad_templates_return_sanitized_envelopes"
+      ]
+    },
+    {
+      "tool": "upsert_lead",
+      "calls_in_passing_tests": 10,
+      "successful_stdio_call": true,
+      "outcomes": {
+        "ok": 10,
+        "error": 0,
+        "raised": 0,
+        "unclassified": 0
+      },
+      "tests": [
+        "tests/mcp/test_playwright_integration.py::test_confirmed_send_bookkeeping_crash_is_repaired_without_resend",
+        "tests/mcp/test_playwright_integration.py::test_opt_out_between_preparation_and_approval_suppresses_send",
+        "tests/mcp/test_playwright_integration.py::test_opt_out_during_follow_navigation_prevents_click",
+        "tests/mcp/test_playwright_integration.py::test_pause_during_browser_navigation_is_rechecked_at_send",
+        "tests/mcp/test_playwright_integration.py::test_paused_campaign_preserves_pending_draft_and_recovers",
+        "tests/mcp/test_playwright_integration.py::test_repeating_old_not_sent_reconciliation_does_not_release_new_draft",
+        "tests/mcp/test_playwright_integration.py::test_uncertain_campaign_requires_reconciliation_and_never_auto_retries",
+        "tests/outreach/test_outreach_tools.py::test_active_account_preparation_and_account_isolation",
+        "tests/outreach/test_outreach_tools.py::test_local_tools_workflow_stages_even_with_draft_mode_off",
+        "tests/outreach/test_outreach_tools.py::test_opt_out_and_bad_templates_return_sanitized_envelopes"
+      ]
+    }
+  ],
+  "missing_positive_evidence": [],
+  "all_tools_have_positive_evidence": true
+}

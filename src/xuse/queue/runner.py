@@ -143,44 +143,74 @@ class QueueRunner:
             if self.store.get(item.queue_id).status != "pending":
                 report.skipped += 1
                 continue
+            # Other MCP calls can pause the account or execute this exact work
+            # during pacing. Recheck both gates before claiming the item.
+            if self.account_filter is not None and not self.account_filter(account_id):
+                report.skipped_inactive += len(self.store.list(account=account_id, status="pending"))
+                return
+            if self.already_done is not None and self.already_done(item.dedup_key):
+                self.store.set_status(item.queue_id, "done", completed_at=self.now_fn().isoformat())
+                report.skipped += 1
+                continue
             self.store.set_status(item.queue_id, "processing")
             try:
                 result = await self.executor(item)
-            except asyncio.CancelledError:
+                if not isinstance(result, dict) or result.get("success") is not True:
+                    error = RuntimeError("Queue action has no confirmed success evidence; inspect its outcome before retrying.")
+                    error.action_id = result.get("action_id") if isinstance(result, dict) else None
+                    raise error
+            except asyncio.CancelledError as e:
                 # The external action may have landed before cancellation.
                 # A later drain must not replay an unconfirmed write.
-                self.store.set_status(item.queue_id, "failed", last_error=
-                    "Interrupted action: outcome unconfirmed. Inspect X and account safety before enqueueing again.")
+                try:
+                    self.store.set_status(item.queue_id, "failed", last_error=
+                        "Interrupted action: outcome unconfirmed. Inspect X and account safety before enqueueing again.",
+                        action_id=getattr(e, "action_id", None))
+                except Exception:
+                    # Preserve cancellation and its action ID. The persisted
+                    # processing record already stops replay after restart.
+                    logger.exception("Queue outcome persistence failed during cancellation.")
                 raise
             except Exception as e:
                 # Sanitize BEFORE persisting/reporting: executor errors can
                 # carry proxy credentials (cold-start failures), and last_error
                 # lands in ok:true responses and the on-disk queue JSONL.
                 message = sanitize_text(e)
-                attempt = self.store.record_attempt(item.queue_id, message)
+                action_id = getattr(e, "action_id", None)
                 # Only an explicit local preflight refusal proves no external
                 # write started. Generic errors/timeouts are not retry proof.
-                retryable = (not getattr(e, "action_id", None) and
+                retryable = (not action_id and
                              getattr(e, "reason", None) in
                              {"cooldown", "minute_budget", "daily_budget", "account_busy"})
-                if not retryable or attempt.attempts >= self.config.max_attempts:
-                    self.store.set_status(item.queue_id, "failed")
-                else:
-                    backoff = self.config.min_delay_seconds * attempt.attempts
-                    not_before = (self.now_fn() + timedelta(seconds=backoff)).isoformat()
-                    self.store.set_status(item.queue_id, "pending", not_before=not_before)
+                try:
+                    attempt = self.store.record_attempt(item.queue_id, message, action_id=action_id)
+                    if not retryable or attempt.attempts >= self.config.max_attempts:
+                        self.store.set_status(item.queue_id, "failed")
+                    else:
+                        backoff = self.config.min_delay_seconds * attempt.attempts
+                        not_before = (self.now_fn() + timedelta(seconds=backoff)).isoformat()
+                        self.store.set_status(item.queue_id, "pending", not_before=not_before)
+                except Exception:
+                    raise QueueJournalError(item.queue_id, action_id) from None
                 report.failed += 1
                 spent += 1
-                report.executed.append({
+                outcome = {
                     "queue_id": item.queue_id, "account": account_id,
                     "action": item.action, "success": False, "error": message,
-                })
+                    "status": self.store.get(item.queue_id).status,
+                }
+                if action_id:
+                    outcome["action_id"] = action_id
+                    outcome["recovery"] = "Inspect X before using resolve_action_outcome; do not resend an unconfirmed action."
+                if getattr(e, "reason", None) is not None:
+                    outcome["reason"] = sanitize_text(e.reason)
+                report.executed.append(outcome)
                 logger.warning("Queue item %s failed (attempt %d): %s",
                                item.queue_id, attempt.attempts, message)
                 continue
             try:
                 self.store.set_status(item.queue_id, "done",
-                                      completed_at=self.now_fn().isoformat())
+                                      completed_at=self.now_fn().isoformat(), action_id=result.get("action_id"))
             except Exception:
                 raise QueueJournalError(item.queue_id, result.get("action_id")) from None
             report.succeeded += 1

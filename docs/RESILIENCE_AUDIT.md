@@ -1,5 +1,9 @@
 # X-use runtime, inbox and delivery audit
 
+For the newer local changes and fresh October 12 verification, see
+[AUDIT_2026-10-12.md](AUDIT_2026-10-12.md). This document retains the historical
+release evidence and tool counts from October 8-9.
+
 Audit dates: 2026-10-08 through 2026-10-09. Scope: the MCP stdio server, browser lifecycle, visible-page reads and writes, inbox operations, local outreach workspace, setup, packaging and release workflows. The existing repository layout, account configuration, draft interface, queue interface and legacy CLI remain in place.
 
 The current follow-up review and earlier verification totals are separated below. All changes retain the existing package layout and X-only scope.

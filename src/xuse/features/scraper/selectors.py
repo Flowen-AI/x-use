@@ -13,7 +13,7 @@ X_TWEET_ARTICLE_XPATH = "//article[@data-testid='tweet']"
 X_USER_NAME_XPATH = "//div[@data-testid='User-Name']//span[1]//span"
 X_USER_HANDLE_XPATH = "//div[@data-testid='User-Name']//span[contains(text(), '@')]"
 X_TWEET_TEXT_XPATH = "//div[@data-testid='tweetText']//span | //div[@data-testid='tweetText']//a"
-X_STATUS_LINK_XPATH = "//a[contains(@href, '/status/') and .//time]"
+X_STATUS_LINK_XPATH = "//a[contains(@href, '/status/') and .//time and not(ancestor::*[@role='link'])]"
 X_TIME_TAG = ".//time"
 X_ENGAGEMENT_BUTTON_XPATH = (
     "//button[@data-testid='{testid}']//span[@data-testid='app-text-transition-container']//span"

@@ -57,6 +57,7 @@ def installed_package_check(expect_installed: bool, driver: str) -> dict:
             assert not json.loads(direct_url).get("dir_info", {}).get("editable"), "Wheel environment contains an editable install."
     entries = {entry.name: entry.value for entry in distribution.entry_points}
     assert entries.get("x-use") == "xuse.cli:app", "CLI entry point is absent."
+    assert entries.get("x-use-mcp") == "xuse.cli:mcp", "Registry MCP entry point is absent."
     skill_root = resources.files("xuse.skills_pack")
     skills = [path.name for path in skill_root.iterdir() if path.is_dir() and (path / "SKILL.md").is_file()]
     assert {"x-use", "x-use-setup", "x-use-engage", "x-use-content", "x-use-review", "x-use-threads", "x-use-inbox"}.issubset(skills), "Bundled skill files are absent from the wheel."
@@ -175,8 +176,11 @@ async def package_protocol_check(directory: Path, expect_installed: bool, driver
     if expect_installed:
         launcher = Path(sys.executable).parent / ("x-use.exe" if os.name == "nt" else "x-use")
         assert launcher.is_file(), "Installed console launcher is absent."
+        registry_launcher = Path(sys.executable).parent / ("x-use-mcp.exe" if os.name == "nt" else "x-use-mcp")
+        assert registry_launcher.is_file(), "Installed package-name MCP launcher is absent."
         entrypoints = [("module", sys.executable, ["-m", "xuse.mcp.server"]),
-                       ("cli", str(launcher), ["mcp"])]
+                       ("cli", str(launcher), ["mcp"]),
+                       ("registry", str(registry_launcher), [])]
     # No account material exists in the child. Keep its ordinary startup
     # warnings out of protocol stdout and do not upload arbitrary process logs.
     class ProtocolErrors(logging.Handler):

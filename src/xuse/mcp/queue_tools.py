@@ -29,22 +29,23 @@ def build_executor(ctx: Ctx):
 
     async def _execute(item) -> Dict[str, Any]:
         payload = item.payload
+        context = {"queue_id": item.queue_id}
         if item.action == "post":
             return await actions.exec_post(
                 ctx, item.account, text=payload.get("text", ""),
-                media=payload.get("media") or None, community=payload.get("community"))
+                media=payload.get("media") or None, community=payload.get("community"), action_context=context)
         if item.action == "reply":
             return await actions.exec_reply(
                 ctx, item.account, tweet_url=payload.get("tweet_url", ""),
                 reply_text=payload.get("text", ""), tweet_id=payload.get("tweet_id"),
-                text_content=payload.get("text_content", ""))
+                text_content=payload.get("text_content", ""), action_context=context)
         if item.action == "like":
             return await actions.exec_like(ctx, item.account, payload["tweet_id"],
-                                           payload.get("tweet_url"))
+                                           payload.get("tweet_url"), action_context=context)
         if item.action == "retweet":
             return await actions.exec_retweet(ctx, item.account, payload["tweet_id"],
                                               payload.get("tweet_url"),
-                                              text_content=payload.get("text_content", ""))
+                                              text_content=payload.get("text_content", ""), action_context=context)
         raise ToolError(f"Unsupported queue action '{item.action}'.")
 
     return _execute

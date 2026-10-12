@@ -18,8 +18,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 from xuse.core.config_loader import CONFIG_DIR, PROJECT_ROOT
 from xuse.core.config_writer import AccountsConfigWriter, ConfigWriteError
 from xuse.core.local_state import private_state_file
-from xuse.doctor import check_cookie_data
-from xuse.browser.cookies import MAX_COOKIE_FILE_BYTES, normalize_cookies
+from xuse.browser.cookies import MAX_COOKIE_FILE_BYTES, parse_cookie_export
 from xuse.browser.errors import SessionError
 
 from . import executor as ex
@@ -41,6 +40,13 @@ def _refresh(ctx: Ctx, accounts: List[Dict[str, Any]]) -> None:
     ctx.config_loader.accounts = accounts
 
 
+async def _close_after_config_change(ctx: Ctx, account: str) -> None:
+    close = getattr(ctx.session_pool, "close_after_config_change", None)
+    # Production pools retain this closure after caller cancellation. Simple
+    # injected pools can keep their existing close-only interface.
+    await (close if callable(close) else ctx.session_pool.close)(account)
+
+
 def _known_account(ctx: Ctx, account: str) -> Dict[str, Any]:
     for raw in ctx.config_loader.get_accounts_config():
         if isinstance(raw, dict) and raw.get("account_id") == account:
@@ -48,17 +54,30 @@ def _known_account(ctx: Ctx, account: str) -> Dict[str, Any]:
     raise ToolError(f"Unknown account '{account}', not present in config/accounts.json.")
 
 
-def _cookie_status(raw: Dict[str, Any]) -> Dict[str, Any]:
-    if raw.get("cookies"):
+def _require_current_account(accounts: List[Dict[str, Any]], account: str) -> None:
+    """Recheck the writer's fresh snapshot before a stale client can save."""
+    matches = sum(isinstance(raw, dict) and raw.get("account_id") == account for raw in accounts)
+    if not matches:
+        raise ConfigWriteError(f"Account '{account}' no longer exists in the selected configuration; reload accounts before retrying.")
+    if matches > 1:
+        raise ConfigWriteError(f"Duplicate account id '{account}' must be corrected before mutation.")
+
+
+def _cookie_status(raw: Dict[str, Any], config_loader: Any = None) -> Dict[str, Any]:
+    if raw.get("cookies") is not None:
         return {"cookies_configured": True, "cookie_file": None, "cookie_file_exists": None}
     cookie_file = raw.get("cookie_file_path")
-    if not cookie_file:
+    if not isinstance(cookie_file, str) or not cookie_file:
         return {"cookies_configured": False, "cookie_file": None, "cookie_file_exists": False}
     path = Path(cookie_file)
-    if not path.is_absolute():
-        path = PROJECT_ROOT / cookie_file
+    config_dir = Path(getattr(config_loader, "accounts_file", CONFIG_DIR / "accounts.json")).parent
+    candidates = [path] if path.is_absolute() else [config_dir / path, PROJECT_ROOT / path]
+    try:
+        exists = any(candidate.is_file() for candidate in candidates)
+    except OSError:
+        exists = False
     return {"cookies_configured": True, "cookie_file": cookie_file,
-            "cookie_file_exists": path.is_file()}
+            "cookie_file_exists": exists}
 
 
 class _CookieRollback(NamedTuple):
@@ -73,56 +92,71 @@ class _CookieRollback(NamedTuple):
     backup: Optional[Path]
 
 
-def _import_cookies(account_id: str, cookie_file: str) -> Tuple[str, Optional[_CookieRollback]]:
-    """Validate and copy a cookie export to config/<account_id>_cookies.json.
-    Returns (repo-relative cookie_file_path, rollback token) — the token is
-    None when the export already sat at the convention path and was used in
-    place, so callers can roll back exactly the copies they made."""
+def _import_cookies(account_id: str, cookie_file: str, *, config_dir: Optional[Path] = None) -> Tuple[str, Optional[_CookieRollback]]:
+    """Validate and atomically import cookies beside the selected accounts file.
+    Returns (cookie_file_path, rollback token). Custom homes use absolute paths
+    so legacy and async backends resolve the same file. Even an export
+    already at the destination is normalized through a private temporary file
+    and backed up, so all backends receive the same cookie-array format."""
+    if not _SAFE_ACCOUNT_ID.fullmatch(account_id or ""):
+        raise ToolError("Cookie import requires an account id using letters, digits, '_' or '-'.")
     src = Path(cookie_file).expanduser()
     if not src.is_file():
         raise ToolError(f"Cookie file not found: {cookie_file}")
     try:
         with src.open("rb") as stream:
             contents = stream.read(MAX_COOKIE_FILE_BYTES + 1)
-        if len(contents) > MAX_COOKIE_FILE_BYTES:
-            raise ValueError()
-        data = json.loads(contents.decode("utf-8-sig"))
-    except (OSError, ValueError, UnicodeError):
-        raise ToolError("Cookie file is not valid JSON or exceeds the import size limit.") from None
-    valid, problems = check_cookie_data(data)
-    if not valid:
-        raise ToolError("Cookie file failed validation: " + "; ".join(problems))
-    try:
-        normalize_cookies(data)
-    except SessionError:
+        data = parse_cookie_export(contents)
+    except (OSError, SessionError):
         raise ToolError("Cookie file failed validation: export secure, unexpired x.com cookies including auth_token and ct0.") from None
-    dest = CONFIG_DIR / f"{account_id}_cookies.json"
-    if src.resolve() == dest.resolve():
-        # The export already sits at the convention path (e.g. the user named
-        # it config/<account_id>_cookies.json) — copying it onto itself raises
-        # SameFileError; validate and use it in place instead.
-        private_state_file(dest)
-        logger.info("Cookie file for account '%s' already at %s; using in place.", account_id, dest)
-        return f"config/{account_id}_cookies.json", None
+    try:
+        normalized = (json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+    except UnicodeError:
+        raise ToolError("Cookie file failed validation: invalid Unicode in the normalized export.") from None
+    if len(normalized) > MAX_COOKIE_FILE_BYTES:
+        raise ToolError("Cookie file failed validation: normalized export exceeds the import size limit.")
+    directory = Path(config_dir) if config_dir is not None else CONFIG_DIR
+    dest = directory.resolve() / f"{account_id}_cookies.json"
     backup: Optional[Path] = None
     existed = dest.exists()
-    private_state_file(dest)
-    if existed:
-        # dest is this account's LIVE cookie file and copyfile is about to
-        # clobber it. If the config mutation then fails, rolling back by
-        # deleting dest would destroy a working login that is not backed up
-        # anywhere, so stash the current contents first and restore them.
+    staged: Optional[Path] = None
+    prepared = False
+    try:
+        private_state_file(dest)
+        prepared = True
+        if existed:
+            # Config mutation may still fail after replacing this file.
+            fd, tmp_name = tempfile.mkstemp(dir=str(dest.parent),
+                                            prefix=f".{account_id}_cookies-", suffix=".bak")
+            os.close(fd)
+            backup = Path(tmp_name)
+            private_state_file(backup)
+            shutil.copyfile(dest, backup)
         fd, tmp_name = tempfile.mkstemp(dir=str(dest.parent),
-                                        prefix=f".{account_id}_cookies-",
-                                        suffix=".bak")
+                                        prefix=f".{account_id}_cookies-", suffix=".tmp")
         os.close(fd)
-        backup = Path(tmp_name)
-        private_state_file(backup)
-        shutil.copyfile(dest, backup)
-    # Persist the exact validated input, never reopen a mutable source path.
-    dest.write_bytes(contents)
+        staged = Path(tmp_name)
+        private_state_file(staged)
+        # Save only the validated snapshot. Storage-state origins and exporter
+        # metadata are not credentials and must not be copied into our store.
+        with staged.open("wb") as stream:
+            stream.write(normalized)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(staged, dest)
+    except OSError:
+        # A failed replace leaves the old file intact. A new empty file made
+        # while establishing private permissions belongs to this attempt only.
+        for abandoned in (staged, backup, dest if prepared and not existed else None):
+            if abandoned is not None:
+                try:
+                    abandoned.unlink(missing_ok=True)
+                except OSError:
+                    pass
+        raise ToolError("Cookie import could not be saved; the existing cookie file was not replaced.") from None
     logger.info("Imported cookies for account '%s' to %s.", account_id, dest)
-    return f"config/{account_id}_cookies.json", _CookieRollback(dest, backup)
+    stored_path = f"config/{account_id}_cookies.json" if dest.parent == CONFIG_DIR.resolve() else str(dest)
+    return stored_path, _CookieRollback(dest, backup)
 
 
 def _discard_cookie_copy(rollback: Optional[_CookieRollback], account_id: str) -> None:
@@ -169,7 +203,7 @@ def register_account_tools(server, ctx: Ctx) -> None:
         credentials masked) plus cookie-file status. Read-only, never
         starts a browser."""
         raw = _known_account(ctx, account)
-        return ok_(account=ex.mask_account(raw), **_cookie_status(raw))
+        return ok_(account=ex.mask_account(raw), **_cookie_status(raw, ctx.config_loader))
 
     @server.tool(annotations=LOCAL_WRITE)
     @guard
@@ -180,8 +214,8 @@ def register_account_tools(server, ctx: Ctx) -> None:
                           is_active: bool = True) -> Dict[str, Any]:
         """Add an account to config/accounts.json (validated, backed up,
         atomic). `cookie_file` is a path ON THIS MACHINE to an exported
-        x.com cookies JSON; it is validated and copied to
-        config/<account_id>_cookies.json. Cookie values never pass through
+        x.com cookies JSON; it is validated and copied beside the selected
+        accounts configuration as <account_id>_cookies.json. Cookie values never pass through
         the tool call. `persona` is freeform markdown describing the
         account's voice/engagement style (max 4000 chars)."""
         if not _SAFE_ACCOUNT_ID.fullmatch(account_id or ""):
@@ -193,7 +227,8 @@ def register_account_tools(server, ctx: Ctx) -> None:
         cookie_rel: Optional[str] = None
         cookie_copied: Optional[_CookieRollback] = None
         if cookie_file:
-            cookie_rel, cookie_copied = _import_cookies(account_id, cookie_file)
+            cookie_rel, cookie_copied = _import_cookies(account_id, cookie_file,
+                config_dir=Path(ctx.config_loader.accounts_file).parent)
         entry: Dict[str, Any] = {
             "account_id": account_id,
             "is_active": bool(is_active),
@@ -236,9 +271,11 @@ def register_account_tools(server, ctx: Ctx) -> None:
         cookie_rel: Optional[str] = None
         cookie_copied: Optional[_CookieRollback] = None
         if cookie_file:
-            cookie_rel, cookie_copied = _import_cookies(account, cookie_file)
+            cookie_rel, cookie_copied = _import_cookies(account, cookie_file,
+                config_dir=Path(ctx.config_loader.accounts_file).parent)
 
         def _apply(accounts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+            _require_current_account(accounts, account)
             for raw in accounts:
                 if not (isinstance(raw, dict) and raw.get("account_id") == account):
                     continue
@@ -276,7 +313,7 @@ def register_account_tools(server, ctx: Ctx) -> None:
             raise ToolError(str(e)) from e
         _commit_cookie_copy(cookie_copied)
         _refresh(ctx, updated)
-        await ctx.session_pool.close(account)
+        await _close_after_config_change(ctx, account)
         return ok_(account=ex.mask_account(_known_account(ctx, account)),
                    message=f"Account '{account}' updated; warm session closed.")
 
@@ -288,6 +325,7 @@ def register_account_tools(server, ctx: Ctx) -> None:
         _known_account(ctx, account)
 
         def _apply(accounts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+            _require_current_account(accounts, account)
             for raw in accounts:
                 if isinstance(raw, dict) and raw.get("account_id") == account:
                     raw["is_active"] = bool(active)
@@ -299,7 +337,7 @@ def register_account_tools(server, ctx: Ctx) -> None:
             raise ToolError(str(e)) from e
         _refresh(ctx, updated)
         if not active:
-            await ctx.session_pool.close(account)
+            await _close_after_config_change(ctx, account)
         return ok_(account=account, is_active=bool(active))
 
     @server.tool(annotations=LOCAL_DESTRUCTIVE)
@@ -312,15 +350,15 @@ def register_account_tools(server, ctx: Ctx) -> None:
         if not confirm:
             raise ToolError("remove_account requires confirm=true.")
         _known_account(ctx, account)
+        def _remove(accounts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+            _require_current_account(accounts, account)
+            return [raw for raw in accounts
+                    if not (isinstance(raw, dict) and raw.get("account_id") == account)]
         try:
-            updated = _writer(ctx).mutate(
-                lambda accounts: [
-                    a for a in accounts
-                    if not (isinstance(a, dict) and a.get("account_id") == account)
-                ])
+            updated = _writer(ctx).mutate(_remove)
         except ConfigWriteError as e:
             raise ToolError(str(e)) from e
         _refresh(ctx, updated)
-        await ctx.session_pool.close(account)
+        await _close_after_config_change(ctx, account)
         return ok_(account=account, removed=True,
                    message="Removed. Previous accounts.json is backed up in config/backups/.")

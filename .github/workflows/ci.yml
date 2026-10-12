@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
   workflow_call:
@@ -14,6 +15,45 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
+  automation:
+    name: Automation policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+      - name: Exercise dependency auto-merge eligibility and race handling
+        run: node --test .github/scripts/dependabot-automerge.test.cjs
+
+  gate:
+    name: CI required
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [automation, test, locked, security, container]
+    steps:
+      - name: Require every test matrix and policy check to succeed
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          jobs = json.loads(os.environ['JOB_RESULTS'])
+          expected = {'automation', 'test', 'locked', 'security', 'container'}
+          if set(jobs) != expected:
+              sys.exit('Required CI job results are missing or unexpected.')
+          failed = {name: job['result'] for name, job in jobs.items()
+                    if job['result'] != 'success'}
+          if failed:
+              print(f'Required jobs did not succeed: {failed}')
+              sys.exit(1)
+          print('All required CI jobs passed.')
+          PY
+
   test:
     name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -72,13 +112,17 @@ jobs:
       - name: Run offline tests
         # Native browsers are required against the clean wheel below. Keep
         # synthetic OS process-identity tests in every source/Python job.
-        run: >-
-          python -m pytest -q -m 'not smoke'
-          --ignore-glob='tests/browser/*_dom.py'
-          --ignore=tests/browser/test_network_privacy.py
-          --deselect=tests/browser/test_session_process_cleanup.py::test_native_synthetic_cleanup_drains_owned_processes
-          --deselect=tests/mcp/test_thread_tools.py::test_native_intercepted_thread_with_reply_media
-          --junitxml=test-results/unit.xml
+        run: |
+          python scripts/audit_mcp.py --report test-results/source-protocol.json
+          python scripts/audit_test_coverage.py \
+            --inventory test-results/source-protocol.json \
+            --report test-results/tool-functional-coverage.json -- \
+            -q -m 'not smoke' \
+            --ignore-glob='tests/browser/*_dom.py' \
+            --ignore=tests/browser/test_network_privacy.py \
+            --deselect=tests/browser/test_session_process_cleanup.py::test_native_synthetic_cleanup_drains_owned_processes \
+            --deselect=tests/mcp/test_thread_tools.py::test_native_intercepted_thread_with_reply_media \
+            --junitxml=test-results/unit.xml
       - name: Build and validate wheel and source distribution
         run: |
           python -m build
@@ -101,6 +145,10 @@ jobs:
           "$WHEEL_PYTHON" scripts/ci_browser_smoke.py
           --mode package --expect-installed
           --report test-results/package-smoke.json
+      - name: Exercise every installed MCP tool and local workflows over stdio
+        run: >-
+          "$WHEEL_PYTHON" scripts/audit_mcp.py
+          --report test-results/full-protocol-audit.json
       - name: Install declared wheel development extras for DOM scenarios
         if: matrix.python-version == '3.12'
         run: |

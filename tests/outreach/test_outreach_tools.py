@@ -56,9 +56,9 @@ async def test_local_tools_workflow_stages_even_with_draft_mode_off(outreach_ser
     assert prepared["drafts"][0]["payload"]["text"] == "Hello Ada"
     assert ctx.draft_store.list()[0].status == "pending"
     tools = await server.list_tools()
-    assert len(tools) == 12
+    assert len(tools) == 13
     assert all(tool.annotations.openWorldHint is False for tool in tools)
-    reads = {"list_leads", "get_lead", "get_campaign", "list_campaigns", "get_campaign_summary"}
+    reads = {"list_leads", "get_lead", "get_campaign", "list_campaigns", "get_campaign_summary", "preview_campaign_message"}
     assert all(tool.annotations.readOnlyHint == (tool.name in reads) for tool in tools)
 
 

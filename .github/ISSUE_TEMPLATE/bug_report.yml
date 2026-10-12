@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a reproducible installation, tool or documentation failure.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a suspected vulnerability, use the [private security channel](https://github.com/ihuzaifashoukat/x-use/security/policy).
+        Do not include cookies, tokens, PINs, private messages, browser profiles or unredacted configuration.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the actual result and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include X-Use version or commit, Python version, OS, MCP client and browser backend. Say whether this is a PyPI, checkout or container install.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: List steps and relevant tool names. Use fictional identities and replace account data with placeholders. Mention draft mode and auto-drain when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized error or diagnostic evidence
+      description: Include the error reason and relevant result status. For an uncertain external write, describe what was observed; do not repeat the action just to reproduce it.
+  - type: checkboxes
+    id: private-data
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed credentials, PINs, private messages and other personal account data from this report.
+          required: true

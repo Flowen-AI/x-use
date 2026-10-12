@@ -2,11 +2,29 @@ import json
 import logging
 from pathlib import Path
 from typing import List, Dict, Optional, Any
+from urllib.parse import urlsplit
 
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.common.exceptions import InvalidArgumentException
+from selenium.common.exceptions import WebDriverException
 
 logger = logging.getLogger(__name__)
+
+_COOKIE_HOSTS = {"x.com", "www.x.com", "mobile.x.com", "twitter.com", "www.twitter.com", "mobile.twitter.com"}
+
+
+def _is_cookie_origin(url: str) -> bool:
+    """Never deliver an X session cookie to an unrelated current page."""
+    try:
+        parsed = urlsplit(url)
+        return (
+            parsed.scheme == "https"
+            and parsed.hostname in _COOKIE_HOSTS
+            and parsed.port in (None, 443)
+            and parsed.username is None
+            and parsed.password is None
+        )
+    except (TypeError, ValueError):
+        return False
 
 
 def is_valid_cookie_list(data: Any) -> bool:
@@ -66,10 +84,21 @@ def load_cookies_from_file(candidate_path: str, config_dir: Path, project_root: 
 
 def apply_cookies(driver: WebDriver, cookies: List[Dict[str, Any]], cookie_domain_url: Optional[str]) -> None:
     if cookie_domain_url:
+        if not _is_cookie_origin(cookie_domain_url):
+            raise WebDriverException("Cookie setup requires an HTTPS X or Twitter origin.")
         try:
             driver.get(cookie_domain_url)
-        except Exception as e:
-            logger.warning(f"Failed navigating to cookie domain {cookie_domain_url} before adding cookies: {e}")
+        except Exception:
+            # Even a host-only cookie would otherwise be added to whichever
+            # unrelated page remained open after the failed navigation.
+            raise WebDriverException("Cookie origin navigation failed; no cookies applied.") from None
+
+    try:
+        current_origin_valid = _is_cookie_origin(driver.current_url)
+    except Exception:
+        current_origin_valid = False
+    if not current_origin_valid:
+        raise WebDriverException("Cookie origin could not be verified; no cookies applied.")
 
     for cookie_dict in cookies:
         selenium_cookie: Dict[str, Any] = {}
@@ -79,7 +108,7 @@ def apply_cookies(driver: WebDriver, cookies: List[Dict[str, Any]], cookie_domai
         # - map sameSite variants
         # - strip unsupported fields
         for key, value in cookie_dict.items():
-            if key in ('expires', 'expirationDate'):
+            if key in ('expiry', 'expires', 'expirationDate'):
                 try:
                     # Many exports store float seconds; Selenium accepts int
                     selenium_cookie['expiry'] = int(value)
@@ -112,22 +141,18 @@ def apply_cookies(driver: WebDriver, cookies: List[Dict[str, Any]], cookie_domai
 
         # Domain normalization: if cookies were exported for twitter.com, remap to x.com
         dom = selenium_cookie.get('domain')
-        if isinstance(dom, str) and 'twitter.com' in dom:
-            try:
-                selenium_cookie['domain'] = dom.replace('twitter.com', 'x.com')
-            except Exception:
-                selenium_cookie['domain'] = '.x.com'
+        if isinstance(dom, str) and dom.lstrip('.').lower() == 'twitter.com':
+            selenium_cookie['domain'] = '.x.com' if dom.startswith('.') else 'x.com'
 
         if 'name' in selenium_cookie and 'value' in selenium_cookie:
             try:
                 driver.add_cookie(selenium_cookie)
-            except InvalidArgumentException as iae:
-                logger.warning(
-                    f"Could not add cookie {selenium_cookie.get('name')} (often domain/sameSite/expiry mismatch): {iae}"
-                )
             except Exception as e:
+                # Driver errors can echo the submitted cookie payload. Do not
+                # place credential-bearing exception text in persistent logs.
                 logger.warning(
-                    f"Could not add cookie {selenium_cookie.get('name')}: {e}"
+                    "Could not add a cookie (%s); check domain, sameSite, and expiry.",
+                    type(e).__name__,
                 )
 
     # NB: no driver.refresh() here. add_cookie takes effect immediately, and

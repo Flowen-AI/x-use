@@ -1,0 +1,58 @@
+# Routing labels describe changed paths; they never authorize merging.
+# Keep these labels pre-created so the PR job needs no issues-write permission.
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '*.md'
+          - 'docs/**'
+          - 'assets/**'
+          - 'src/xuse/skills_pack/**'
+          - 'plugins/**/SKILL.md'
+          - '.github/ISSUE_TEMPLATE/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'tests/**'
+          - 'scripts/audit_*.py'
+          - 'scripts/ci_browser_smoke.py'
+          - 'scripts/selenium_browser_smoke.py'
+
+browser:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/xuse/browser/**'
+          - 'src/xuse/core/browser_manager/**'
+          - 'tests/browser/**'
+          - 'tests/core/test_browser_manager*'
+          - 'tests/test_browser_options.py'
+
+mcp:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/xuse/mcp/**'
+          - 'tests/mcp/**'
+          - 'scripts/mcp_config.py'
+          - 'server.json'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'pyproject.toml'
+          - 'uv.lock'
+          - 'requirements*.txt'
+          - 'requirements/**'
+          - '.github/dependabot.yml'
+          - 'Dockerfile'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/actions/**'
+          - '.github/scripts/**'
+          - '.github/labeler.yml'
+          - '.github/dependabot.yml'
+          - 'scripts/ci_*.py'
+          - 'scripts/audit_*.py'
+          - 'Dockerfile'

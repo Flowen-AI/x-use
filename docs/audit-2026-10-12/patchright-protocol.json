@@ -1,0 +1,1146 @@
+{
+  "tool_calls": [
+    {
+      "tool": "list_accounts",
+      "phase": "empty_home_contract",
+      "ok": true,
+      "seconds": 0.0051
+    },
+    {
+      "tool": "get_metrics",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0017
+    },
+    {
+      "tool": "search_tweets",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "search_profile",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "get_tweet",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "post_tweet",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "generate_and_post",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "reply_to_tweet",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "prepare_reply",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "run_cycle",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "engage",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0018
+    },
+    {
+      "tool": "queue_post",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "queue_engagement",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "list_queue",
+      "phase": "empty_home_contract",
+      "ok": true,
+      "seconds": 0.0037
+    },
+    {
+      "tool": "cancel_queued_action",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "process_queue",
+      "phase": "empty_home_contract",
+      "ok": true,
+      "seconds": 0.0039
+    },
+    {
+      "tool": "get_account",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "add_account",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "update_account",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "set_account_active",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "remove_account",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "get_runtime_info",
+      "phase": "empty_home_contract",
+      "ok": true,
+      "seconds": 0.0077
+    },
+    {
+      "tool": "list_drafts",
+      "phase": "empty_home_contract",
+      "ok": true,
+      "seconds": 0.004
+    },
+    {
+      "tool": "get_draft",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0018
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "get_run_status",
+      "phase": "empty_home_contract",
+      "ok": true,
+      "seconds": 0.0039
+    },
+    {
+      "tool": "get_account_health",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0018
+    },
+    {
+      "tool": "research_and_stage",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "draft_post_variations",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0017
+    },
+    {
+      "tool": "list_proxies",
+      "phase": "empty_home_contract",
+      "ok": true,
+      "seconds": 0.0039
+    },
+    {
+      "tool": "add_proxy",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "remove_proxy",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "test_proxy",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "get_inbox",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "get_conversation",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0034
+    },
+    {
+      "tool": "search_conversations",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "send_message",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "follow_profile",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "get_profile",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "get_home_feed",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "get_session_status",
+      "phase": "empty_home_contract",
+      "ok": true,
+      "seconds": 0.003
+    },
+    {
+      "tool": "close_session",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "get_account_safety",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "pause_account_actions",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "resume_account_actions",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "resolve_action_outcome",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "unlock_inbox",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "get_profile_context",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "get_profile_posts",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "get_profile_connections",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "preview_campaign_message",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "upsert_lead",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "list_leads",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "get_lead",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "update_lead_status",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "opt_out_lead",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "create_campaign",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "get_campaign",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "list_campaigns",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "add_campaign_leads",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "set_campaign_status",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "prepare_campaign_messages",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "get_campaign_summary",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "prepare_outreach",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "get_thread",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "prepare_thread",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "get_thread_run",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0642
+    },
+    {
+      "tool": "continue_thread",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0198
+    },
+    {
+      "tool": "cancel_thread",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0148
+    },
+    {
+      "tool": "get_account_analytics",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0018
+    },
+    {
+      "tool": "get_notifications",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.002
+    },
+    {
+      "tool": "get_bookmarks",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "bookmark_tweet",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "remove_bookmark",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "unlike_tweet",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "undo_retweet",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "unfollow_profile",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0014
+    },
+    {
+      "tool": "edit_tweet",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0013
+    },
+    {
+      "tool": "delete_tweet",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "get_conversation_controls",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0025
+    },
+    {
+      "tool": "manage_conversation",
+      "phase": "empty_home_contract",
+      "ok": false,
+      "seconds": 0.0024
+    },
+    {
+      "tool": "add_account",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0138
+    },
+    {
+      "tool": "update_account",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0185
+    },
+    {
+      "tool": "set_account_active",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0172
+    },
+    {
+      "tool": "set_account_active",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0169
+    },
+    {
+      "tool": "get_account",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.004
+    },
+    {
+      "tool": "get_account_health",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0909
+    },
+    {
+      "tool": "get_metrics",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0148
+    },
+    {
+      "tool": "get_account_safety",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0175
+    },
+    {
+      "tool": "pause_account_actions",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0239
+    },
+    {
+      "tool": "add_proxy",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0145
+    },
+    {
+      "tool": "list_proxies",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0048
+    },
+    {
+      "tool": "remove_proxy",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0196
+    },
+    {
+      "tool": "post_tweet",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0156
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0046
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0166
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0017
+    },
+    {
+      "tool": "reply_to_tweet",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0107
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.004
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0107
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0017
+    },
+    {
+      "tool": "send_message",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0182
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0037
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0102
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "follow_profile",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0164
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0037
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0101
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "bookmark_tweet",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.01
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0041
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0112
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "remove_bookmark",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0099
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0042
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0109
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "unlike_tweet",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0098
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0038
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0108
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "undo_retweet",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.01
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.004
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0108
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "unfollow_profile",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0101
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0037
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0141
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0018
+    },
+    {
+      "tool": "edit_tweet",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.012
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0038
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0104
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0018
+    },
+    {
+      "tool": "delete_tweet",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0102
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0038
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0107
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0015
+    },
+    {
+      "tool": "manage_conversation",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0107
+    },
+    {
+      "tool": "get_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0043
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0105
+    },
+    {
+      "tool": "approve_draft",
+      "phase": "local_workflow",
+      "ok": false,
+      "seconds": 0.0016
+    },
+    {
+      "tool": "prepare_thread",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0342
+    },
+    {
+      "tool": "get_thread_run",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0101
+    },
+    {
+      "tool": "cancel_thread",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0385
+    },
+    {
+      "tool": "continue_thread",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0158
+    },
+    {
+      "tool": "queue_post",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0136
+    },
+    {
+      "tool": "queue_engagement",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0109
+    },
+    {
+      "tool": "cancel_queued_action",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0107
+    },
+    {
+      "tool": "cancel_queued_action",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0106
+    },
+    {
+      "tool": "list_queue",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0042
+    },
+    {
+      "tool": "process_queue",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0042
+    },
+    {
+      "tool": "upsert_lead",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.024
+    },
+    {
+      "tool": "get_lead",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0122
+    },
+    {
+      "tool": "list_leads",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0117
+    },
+    {
+      "tool": "update_lead_status",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0235
+    },
+    {
+      "tool": "create_campaign",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0241
+    },
+    {
+      "tool": "add_campaign_leads",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0388
+    },
+    {
+      "tool": "preview_campaign_message",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0123
+    },
+    {
+      "tool": "prepare_campaign_messages",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0307
+    },
+    {
+      "tool": "reject_draft",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.011
+    },
+    {
+      "tool": "opt_out_lead",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0271
+    },
+    {
+      "tool": "get_campaign",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0153
+    },
+    {
+      "tool": "get_campaign_summary",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0125
+    },
+    {
+      "tool": "set_campaign_status",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0229
+    },
+    {
+      "tool": "list_campaigns",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0122
+    },
+    {
+      "tool": "close_session",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0032
+    },
+    {
+      "tool": "get_session_status",
+      "phase": "local_workflow",
+      "ok": true,
+      "seconds": 0.0031
+    },
+    {
+      "tool": "list_drafts",
+      "phase": "restart",
+      "ok": true,
+      "seconds": 0.0136
+    },
+    {
+      "tool": "get_lead",
+      "phase": "restart",
+      "ok": true,
+      "seconds": 0.0121
+    },
+    {
+      "tool": "get_campaign_summary",
+      "phase": "restart",
+      "ok": true,
+      "seconds": 0.0113
+    },
+    {
+      "tool": "remove_account",
+      "phase": "restart",
+      "ok": true,
+      "seconds": 0.0136
+    }
+  ],
+  "external_writes": 0,
+  "live_authentication": false,
+  "tools": [
+    "add_account",
+    "add_campaign_leads",
+    "add_proxy",
+    "approve_draft",
+    "bookmark_tweet",
+    "cancel_queued_action",
+    "cancel_thread",
+    "close_session",
+    "continue_thread",
+    "create_campaign",
+    "delete_tweet",
+    "draft_post_variations",
+    "edit_tweet",
+    "engage",
+    "follow_profile",
+    "generate_and_post",
+    "get_account",
+    "get_account_analytics",
+    "get_account_health",
+    "get_account_safety",
+    "get_bookmarks",
+    "get_campaign",
+    "get_campaign_summary",
+    "get_conversation",
+    "get_conversation_controls",
+    "get_draft",
+    "get_home_feed",
+    "get_inbox",
+    "get_lead",
+    "get_metrics",
+    "get_notifications",
+    "get_profile",
+    "get_profile_connections",
+    "get_profile_context",
+    "get_profile_posts",
+    "get_run_status",
+    "get_runtime_info",
+    "get_session_status",
+    "get_thread",
+    "get_thread_run",
+    "get_tweet",
+    "list_accounts",
+    "list_campaigns",
+    "list_drafts",
+    "list_leads",
+    "list_proxies",
+    "list_queue",
+    "manage_conversation",
+    "opt_out_lead",
+    "pause_account_actions",
+    "post_tweet",
+    "prepare_campaign_messages",
+    "prepare_outreach",
+    "prepare_reply",
+    "prepare_thread",
+    "preview_campaign_message",
+    "process_queue",
+    "queue_engagement",
+    "queue_post",
+    "reject_draft",
+    "remove_account",
+    "remove_bookmark",
+    "remove_proxy",
+    "reply_to_tweet",
+    "research_and_stage",
+    "resolve_action_outcome",
+    "resume_account_actions",
+    "run_cycle",
+    "search_conversations",
+    "search_profile",
+    "search_tweets",
+    "send_message",
+    "set_account_active",
+    "set_campaign_status",
+    "test_proxy",
+    "undo_retweet",
+    "unfollow_profile",
+    "unlike_tweet",
+    "unlock_inbox",
+    "update_account",
+    "update_lead_status",
+    "upsert_lead"
+  ],
+  "prompts": [
+    "daily_check",
+    "draft_replies",
+    "outreach_message",
+    "research_niche",
+    "review_and_publish",
+    "setup_account",
+    "thread_workflow"
+  ],
+  "resources": [
+    "xuse://accounts",
+    "xuse://drafts/pending",
+    "xuse://accounts/audit",
+    "xuse://accounts/audit/persona"
+  ],
+  "session_status": {
+    "ok": true,
+    "backend": "patchright",
+    "live_authentication_checked": false,
+    "sessions": []
+  },
+  "tool_count": 82,
+  "distinct_tools_called": 82,
+  "success": true
+}
