@@ -189,7 +189,11 @@ def main():
     parser.add_argument('--report',type=Path,required=True)
     args=parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='xuse-protocol-audit-') as temporary:
-        report=asyncio.run(audit(Path(temporary),args.python))
+        # macOS may return a /var path whose parent is a system symlink.
+        # Canonicalize only this directory we created; production state paths
+        # still reject links rather than silently resolving operator inputs.
+        directory=Path(temporary).resolve()
+        report=asyncio.run(audit(directory,args.python))
     args.report.parent.mkdir(parents=True,exist_ok=True)
     args.report.write_text(json.dumps(report,indent=2),encoding='utf-8')
     print(json.dumps({key:report[key] for key in ('success','tool_count','distinct_tools_called','external_writes')}))

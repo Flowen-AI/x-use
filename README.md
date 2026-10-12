@@ -2,7 +2,7 @@
 
 <!-- mcp-name: io.github.ihuzaifashoukat/x-use -->
 
-![x-use — research, draft, review and publish with an MCP server for X (Twitter)](https://raw.githubusercontent.com/ihuzaifashoukat/x-use/main/assets/x-use-social-preview.jpg)
+[![x-use logo — research, draft, review and publish with an MCP server for X (Twitter)](https://raw.githubusercontent.com/ihuzaifashoukat/x-use/efb9500d4edd0d1482688d1a11b9b39239aa9bc0/assets/x-use-social-preview.jpg)](https://github.com/ihuzaifashoukat/x-use)
 
 **Connect your AI client to X research, inbox reads, and reviewed publishing.**
 
@@ -12,6 +12,7 @@ x-use is an open-source Python Model Context Protocol (MCP) server and CLI for X
 [![Python](https://img.shields.io/pypi/pyversions/x-use-mcp)](https://pypi.org/project/x-use-mcp/)
 [![CI](https://github.com/ihuzaifashoukat/x-use/actions/workflows/ci.yml/badge.svg)](https://github.com/ihuzaifashoukat/x-use/actions/workflows/ci.yml)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue)](https://github.com/ihuzaifashoukat/x-use/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/ihuzaifashoukat/x-use?style=flat)](https://github.com/ihuzaifashoukat/x-use/stargazers)
 
 [Quickstart](#quickstart) · [Documentation](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/README.md) · [Tool reference](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/MCP_GUIDE.md) · [Discussions](https://github.com/ihuzaifashoukat/x-use/discussions) · [Contribute](https://github.com/ihuzaifashoukat/x-use/blob/main/CONTRIBUTING.md)
 
@@ -194,6 +195,12 @@ Start with the [documentation index](https://github.com/ihuzaifashoukat/x-use/bl
 Found a reproducible problem? [Report a bug](https://github.com/ihuzaifashoukat/x-use/issues/new/choose). Have a workflow to share? [Start a discussion](https://github.com/ihuzaifashoukat/x-use/discussions). Useful first contributions include clearer setup instructions, fictional browser fixtures, platform fixes and example presets.
 
 See [CONTRIBUTING](https://github.com/ihuzaifashoukat/x-use/blob/main/CONTRIBUTING.md), the [Code of Conduct](https://github.com/ihuzaifashoukat/x-use/blob/main/CODE_OF_CONDUCT.md) and [security policy](https://github.com/ihuzaifashoukat/x-use/blob/main/SECURITY.md). If x-use helps your work, a GitHub star helps other developers discover it.
+
+## Star history
+
+[![x-use star history — dated snapshot of cumulative stars from current stargazers](https://raw.githubusercontent.com/ihuzaifashoukat/x-use/c2f368aa7b6673c31a9573711e5e55affa77e73a/assets/star-history.svg)](https://github.com/ihuzaifashoukat/x-use/stargazers)
+
+Snapshot: **12 October 2026**. Removed stars are not included. The badge above shows the current total; [maintainers can refresh this chart](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/BRAND.md#publication).
 
 ## License
 

@@ -2,7 +2,9 @@
 import asyncio
 import errno
 import json
+import math
 import os
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -91,7 +93,10 @@ def lifecycle_pool(request, make_config_loader, tmp_path, monkeypatch):
 
 
 async def eventually(predicate):
-    for _ in range(200):
+    # Short asyncio timers can be serviced early on a coarse Windows clock.
+    # Bound elapsed time, not a count that assumes every 5ms sleep really waits.
+    deadline = time.monotonic() + 1.0
+    while time.monotonic() < deadline:
         if predicate():
             return
         await asyncio.sleep(0.005)
@@ -99,8 +104,15 @@ async def eventually(predicate):
 
 
 @pytest.mark.asyncio
-async def test_last_idle_context_reclaims_runtime_and_next_explicit_use_is_fresh(lifecycle_pool):
+@pytest.mark.parametrize('coarse_clock', [False, True], ids=['native-clock', 'coarse-windows-clock'])
+async def test_last_idle_context_reclaims_runtime_and_next_explicit_use_is_fresh(lifecycle_pool, monkeypatch, coarse_clock):
     pool, runtimes = lifecycle_pool
+    if coarse_clock:
+        # Reproduce the 15.625ms event-loop clock used by older Windows Python
+        # versions, including their look-ahead when servicing short timers.
+        loop = asyncio.get_running_loop()
+        monkeypatch.setattr(loop, '_clock_resolution', 1 / 64)
+        monkeypatch.setattr(loop, 'time', lambda: math.floor(time.monotonic() * 64) / 64)
     try:
         original = await pool.acquire("a")
         await eventually(lambda: pool._runtime is None)

@@ -96,6 +96,21 @@ gates or complete visible-page history.
 
 ## Pull requests and releases
 
+### Contributor automation
+
+Dependabot proposes weekly Python, GitHub Actions, and Docker updates. Eligible
+patch/minor dependency PRs can merge automatically after required checks and
+branch protection conditions pass; major updates and ordinary contributions
+remain for maintainer review. Keep your branch up to date and inspect failing
+checks before retrying. See [contributor automation](docs/CONTRIBUTOR_AUTOMATION.md)
+for update groups, review expectations, and recovery steps.
+
+When changing repository automation, run the isolated policy tests with Node 24:
+
+```bash
+node --test .github/scripts/dependabot-automerge.test.cjs
+```
+
 ### Development inbox unlocking
 
 Repeated browser fixture work does not need real credentials. For an authorized

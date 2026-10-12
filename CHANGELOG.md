@@ -39,6 +39,9 @@ project follows [semantic versioning](https://semver.org/). See
   restart persistence, also run against the installed wheel in CI.
 - Task-oriented documentation, workflow examples, reusable brand assets,
   contribution forms and clearer installation and capability descriptions.
+- Weekly dependency updates, verified patch/minor auto-merge eligibility,
+  CodeQL analysis, dependency review, PR path labels and issue triage labels.
+  A required CI aggregate blocks merging when any test matrix or policy fails.
 - Guarded manual release recovery runs corrected CI fixtures while building the
   original published tag. Runtime and packaging differences are rejected, and
   the full cross-platform verification remains required before publication.
@@ -106,6 +109,11 @@ project follows [semantic versioning](https://semver.org/). See
   draft/queue state; operating-system ownership releases on process exit.
 - Shared README links resolve correctly from PyPI, package metadata includes
   project URLs, and capability claims distinguish defaults and execution paths.
+- README branding uses permanent public image URLs; a repository-hosted star
+  history snapshot and current-star badge replace the unavailable chart embed.
+- The protocol audit canonicalizes its own macOS temporary directory without
+  relaxing private-state link checks. Idle lifecycle fixtures use elapsed-time
+  deadlines and explicitly reproduce coarse Windows timer behavior.
 - Cancellation tests arm their deadline after the intended execution phase is
   observed, so slow initial storage cannot be mistaken for cancellation after
   a confirmed send. This changes CI fixtures only.
@@ -507,8 +515,8 @@ CLI.
 
 - `python src/main.py` still works, with a warning pointing to `x-use run`.
 
-[Unreleased]: https://github.com/ihuzaifashoukat/x-use/compare/v3.0.0...HEAD
-[3.1.0]: https://github.com/ihuzaifashoukat/x-use/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/ihuzaifashoukat/x-use/compare/v3.1.0...HEAD
+[3.1.0]: https://github.com/ihuzaifashoukat/x-use/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/ihuzaifashoukat/x-use/compare/v2.4.1...v3.0.0
 [2.4.1]: https://github.com/ihuzaifashoukat/x-use/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/ihuzaifashoukat/x-use/compare/v2.3.1...v2.4.0

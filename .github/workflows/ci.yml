@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
   workflow_call:
@@ -14,6 +15,45 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'release' }}
 
 jobs:
+  automation:
+    name: Automation policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: '24'
+      - name: Exercise dependency auto-merge eligibility and race handling
+        run: node --test .github/scripts/dependabot-automerge.test.cjs
+
+  gate:
+    name: CI required
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [automation, test, locked, security, container]
+    steps:
+      - name: Require every test matrix and policy check to succeed
+        env:
+          JOB_RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          jobs = json.loads(os.environ['JOB_RESULTS'])
+          expected = {'automation', 'test', 'locked', 'security', 'container'}
+          if set(jobs) != expected:
+              sys.exit('Required CI job results are missing or unexpected.')
+          failed = {name: job['result'] for name, job in jobs.items()
+                    if job['result'] != 'success'}
+          if failed:
+              print(f'Required jobs did not succeed: {failed}')
+              sys.exit(1)
+          print('All required CI jobs passed.')
+          PY
+
   test:
     name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}

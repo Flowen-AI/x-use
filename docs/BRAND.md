@@ -16,7 +16,11 @@ The PNG master exceeds GitHub's 1 MB upload limit. Use the JPEG export, which pr
 
 ## Publication
 
-The README uses the JPEG from this repository. GitHub's repository social preview is a separate setting: upload the JPEG through Settings → Social preview when updating that surface. Including the image in the repository does not automatically change this setting. The older assets/social-preview.png remains as a legacy asset.
+The README uses the JPEG, including the logo on a white background that remains visible in light and dark themes. Its absolute URL points to the immutable commit containing the asset, so it works on GitHub, in a PR, and in PyPI's package description without depending on an unmerged `main` path. Keep that commit reachable when merging. The separate [transparent icon](../assets/x-use-icon.png) remains available for other surfaces.
+
+GitHub's repository social preview is a separate setting. The JPEG was uploaded and visually verified there on 2026-10-12. For future updates, use Settings → Social preview; changing the repository file alone does not change that setting. The older assets/social-preview.png remains as a legacy asset.
+
+The README star-history image is a dated snapshot hosted in the repository. Regenerate it with `uv run --no-project --with matplotlib python scripts/update_star_history.py`, review the image, and update the pinned README asset URL in the same PR. The script uses local GitHub CLI authentication and publishes aggregate counts only; it does not send a token to an external chart service. The separate stars badge shows the current total.
 
 Use the name and icon consistently in Registry and directory metadata after their HTTPS asset URLs are publicly available. x-use is independent of X; the brand does not imply platform endorsement.
 
