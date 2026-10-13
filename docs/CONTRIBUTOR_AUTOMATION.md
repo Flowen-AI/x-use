@@ -48,6 +48,16 @@ metadata must be a known patch or minor update from one ecosystem in the root
 directory and match the signed commit metadata. Empty, unknown, or major update
 metadata requires manual review.
 
+Some Docker updates omit the signed `update-type` field. For those updates, the
+policy can derive patch/minor status from one unambiguous version transition in
+the signed commit, matched to the signed target version and the official
+metadata. It requires an increasing version within the same major release,
+unchanged tag precision and platform variant, and a stable numeric version.
+This fallback accepts bare numeric tags and the current `slim-bookworm` variant;
+other suffixes require manual review rather than guessing their meaning.
+Major changes, downgrades, digests, prereleases, variant changes, and versions
+inferred only from editable PR text remain ineligible.
+
 | Update ecosystem | Eligible modified files |
 |---|---|
 | uv | `pyproject.toml`, `uv.lock` |

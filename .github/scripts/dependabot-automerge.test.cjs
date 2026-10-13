@@ -54,6 +54,13 @@ function evaluate(f) {
   policy.checkFiles(f.pr, f.files, ecosystem);
 }
 function syncMetadata(f) { f.env.DEPENDABOT_METADATA = JSON.stringify(f.metadata); }
+function dockerTransition(previous = '3.12-slim-bookworm', next = '3.14-slim-bookworm', type = MINOR) {
+  const f = fixture('docker', [type]);
+  Object.assign(f.metadata[0], { dependencyName: 'python', prevVersion: previous, newVersion: next });
+  syncMetadata(f);
+  f.commits[0].commit.message = `Bump container dependency\n\nUpdates \`python\` from ${previous} to ${next}\n\n---\nupdated-dependencies:\n- dependency-name: python\n  dependency-version: ${next}\n  dependency-type: direct:production\n  dependency-group: docker-patch-and-minor\n...\n`;
+  return f;
+}
 function harness(f = fixture(), options = {}) {
   const calls = [];
   const outputs = {};
@@ -185,6 +192,87 @@ test('supports grouped action metadata with versions and dependency-group per re
     .replace('- dependency-name: docker/build-push-action\n', '- dependency-name: docker/build-push-action\n  dependency-version: 7.3.0\n');
   evaluate(f);
 });
+test('accepts signed Docker minor transition when Dependabot omits update-type', () => {
+  evaluate(dockerTransition());
+});
+test('accepts signed Docker patch transition with unchanged variant', () => {
+  evaluate(dockerTransition('3.12.10-slim-bookworm', '3.12.11-slim-bookworm', PATCH));
+});
+test('accepts signed Docker numeric tags with no platform suffix', () => {
+  evaluate(dockerTransition('3.12.1', '3.14.0', MINOR));
+});
+for (const [name, previous, next] of [
+  ['major', '3.12-slim-bookworm', '4.0-slim-bookworm'],
+  ['minor downgrade', '3.14-slim-bookworm', '3.12-slim-bookworm'],
+  ['patch downgrade', '3.12.11-slim-bookworm', '3.12.10-slim-bookworm'],
+  ['no change', '3.14-slim-bookworm', '3.14-slim-bookworm'],
+  ['variant change', '3.12-slim-bookworm', '3.14-slim-trixie'],
+  ['precision change', '3.12-slim-bookworm', '3.14.0-slim-bookworm'],
+  ['prefix change', '3.12-slim-bookworm', 'v3.14-slim-bookworm'],
+  ['prerelease', '3.12-rc1', '3.14-rc1'],
+  ['development tag', '3.12-slim-dev', '3.14-slim-dev'],
+  ['unrecognized prerelease suffix', '3.12-experimental', '3.14-experimental'],
+  ['unrecognized stable variant', '3.12-alpine3.22', '3.14-alpine3.22'],
+  ['unknown version', 'latest', '3.14-slim-bookworm'],
+  ['leading zero', '3.012-slim-bookworm', '3.14-slim-bookworm'],
+  ['digest', 'sha256:abcdef', 'sha256:123456'],
+]) {
+  test(`rejects signed Docker ${name} when type is missing`, () => {
+    assert.throws(() => evaluate(dockerTransition(previous, next)));
+  });
+}
+for (const [name, change] of [
+  ['missing transition', f => { f.commits[0].commit.message = f.commits[0].commit.message.replace(/^Updates.*\n/m, ''); }],
+  ['duplicate transition', f => { f.commits[0].commit.message += 'Updates `python` from 3.12-slim-bookworm to 3.14-slim-bookworm\n'; }],
+  ['different dependency', f => { f.commits[0].commit.message = f.commits[0].commit.message.replace('Updates `python`', 'Updates `other`'); }],
+  ['unsigned previous version', f => { f.metadata[0].prevVersion = '3.13-slim-bookworm'; syncMetadata(f); }],
+  ['unsigned new version', f => { f.metadata[0].newVersion = '3.15-slim-bookworm'; syncMetadata(f); }],
+  ['mismatched YAML new version', f => { f.commits[0].commit.message = f.commits[0].commit.message.replace('dependency-version: 3.14', 'dependency-version: 3.15'); }],
+  ['missing YAML version', f => { f.commits[0].commit.message = f.commits[0].commit.message.replace(/^  dependency-version:.*\n/m, ''); }],
+  ['wrong computed type', f => { f.metadata[0].updateType = PATCH; f.env.DEPENDABOT_UPDATE_TYPE = PATCH; syncMetadata(f); }],
+  ['explicit major cannot be overridden', f => { f.commits[0].commit.message = f.commits[0].commit.message.replace('  dependency-type:', `  update-type: ${MAJOR}\n  dependency-type:`); }],
+]) {
+  test(`rejects Docker ${name}`, () => {
+    const f = dockerTransition(); change(f); assert.throws(() => evaluate(f));
+  });
+}
+test('does not extend missing-type fallback to other ecosystems or mutable PR text', () => {
+  const f = dockerTransition();
+  f.pr.head.ref = f.context.payload.pull_request.head.ref = 'dependabot/uv/group';
+  f.metadata[0].packageEcosystem = 'uv'; syncMetadata(f);
+  f.files[0].filename = 'uv.lock';
+  assert.throws(() => evaluate(f));
+  const title = dockerTransition();
+  title.commits[0].commit.message = title.commits[0].commit.message.replace(/^Updates.*\n/m, '');
+  title.pr.title = title.context.payload.pull_request.title = 'Updates `python` from 3.12-slim-bookworm to 3.14-slim-bookworm';
+  assert.throws(() => evaluate(title));
+});
+test('rejects repeated same-name Docker dependencies with omitted update types', () => {
+  const f = dockerTransition();
+  f.metadata.push(clone(f.metadata[0])); syncMetadata(f);
+  const entry = f.commits[0].commit.message.match(/(- dependency-name:[\s\S]*?)\n\.\.\./)[1];
+  f.commits[0].commit.message = f.commits[0].commit.message.replace('\n...\n', `\n${entry}\n...\n`);
+  assert.throws(() => evaluate(f), /Repeated Docker dependency/);
+});
+test('checks every omitted Docker type in a grouped update', () => {
+  const f = dockerTransition();
+  f.metadata.push({ ...f.metadata[0], dependencyName: 'runtime', prevVersion: '1.2.1', newVersion: '1.2.2', updateType: PATCH });
+  syncMetadata(f);
+  f.commits[0].commit.message = f.commits[0].commit.message
+    .replace('\n---\n', '\nUpdates `runtime` from 1.2.1 to 1.2.2\n\n---\n')
+    .replace('\n...\n', '\n- dependency-name: runtime\n  dependency-version: 1.2.2\n  dependency-type: direct:production\n  dependency-group: docker-patch-and-minor\n...\n');
+  evaluate(f);
+  f.metadata[1].newVersion = '2.0.0'; syncMetadata(f);
+  f.commits[0].commit.message = f.commits[0].commit.message.replaceAll('1.2.2', '2.0.0');
+  assert.throws(() => evaluate(f), /Docker major updates/);
+});
+test('signed Docker fallback uses the same protected native auto-merge path', async () => {
+  const h = harness(dockerTransition());
+  assert.equal((await policy.apply(h)).enabled, true);
+  const enabled = h.calls.find(call => call.operation === 'enable');
+  assert.deepEqual(enabled.variables, { id: 'PR_test', head: HEAD });
+  assert.match(enabled.query, /expectedHeadOid: \$head/);
+});
 test('rejects nested workflow directories and file-type confusion', () => {
   for (const filename of ['.github/workflows/nested/test.yml', '.github/workflows/ci.yml.js', 'Dockerfile', '.github/scripts/policy.cjs']) {
     const f = fixture('github_actions'); f.files[0].filename = filename;
@@ -290,7 +378,7 @@ test('failed revocation fails the job before any enablement', async () => {
   assert.equal(h.calls.some(c => c.operation === 'enable'), false);
 });
 test('workflow uses trusted main and immutable actions without evaluating PR content', () => {
-  const workflow = fs.readFileSync(path.join(__dirname, '../workflows/dependabot-automerge.yml'), 'utf8');
+  const workflow = fs.readFileSync(path.join(__dirname, '../workflows/dependabot-automerge.yml'), 'utf8').replaceAll('\r\n', '\n');
   assert.match(workflow, /pull_request_target:/);
   assert.match(workflow, /types: \[opened, reopened, synchronize, edited, ready_for_review, converted_to_draft, auto_merge_enabled\]/);
   assert.doesNotMatch(workflow, /branches:/);
