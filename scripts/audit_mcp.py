@@ -66,10 +66,10 @@ async def audit(directory, python):
         start=time.monotonic()
         result=await session.call_tool(name,args or {})
         content=json.loads(result.content[0].text)
-        structured=result.structuredContent
+        structured=result.structured_content
         assert structured is not None, f'{name}: no structured result'
         assert structured.get('result',structured)==content, f'{name}: result representations disagree'
-        assert result.isError is (not content['ok']), f'{name}: isError disagrees with envelope'
+        assert result.is_error is (not content['ok']), f'{name}: isError disagrees with envelope'
         if expected is not None:
             assert content['ok'] is expected, f'{name}: {content}'
         report['tool_calls'].append({'tool':name,'phase':phase,'ok':content['ok'],
@@ -82,9 +82,9 @@ async def audit(directory, python):
         report['tools']=sorted(names)
         for tool in tools:
             assert tool.annotations is not None
-            assert tool.inputSchema['type']=='object'
-            args={key:sample(tool.inputSchema['properties'][key])
-                  for key in tool.inputSchema.get('required',[])}
+            assert tool.input_schema['type']=='object'
+            args={key:sample(tool.input_schema['properties'][key])
+                  for key in tool.input_schema.get('required',[])}
             # No account exists, and these controls prevent configuration or
             # network mutations even for account-independent optional tools.
             if tool.name=='add_account':
@@ -162,8 +162,8 @@ async def audit(directory, python):
             assert result.messages
         report['prompts']=sorted(p.name for p in prompts)
         resources=(await session.list_resources()).resources
-        templates=(await session.list_resource_templates()).resourceTemplates
-        uris=[str(r.uri) for r in resources]+[str(r.uriTemplate).replace('{account_id}','audit') for r in templates]
+        templates=(await session.list_resource_templates()).resource_templates
+        uris=[str(r.uri) for r in resources]+[str(r.uri_template).replace('{account_id}','audit') for r in templates]
         for uri in uris:
             result=await session.read_resource(uri)
             assert result.contents

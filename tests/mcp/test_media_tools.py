@@ -19,11 +19,11 @@ TWEET_URL = "https://x.com/janedoe/status/1234567890"
 
 
 async def tool_content(server, name, args):
-    """Return the content blocks of a tool call, tolerating both FastMCP
-    return shapes: a (content, structured) tuple for plain dict results and
-    a bare CallToolResult when the tool attached image content."""
+    """Return the content blocks of a tool call. MCPServer returns a
+    CallToolResult both for plain dict results and for attached images."""
     raw = await server.call_tool(name, args)
-    return raw.content if isinstance(raw, CallToolResult) else raw[0]
+    assert isinstance(raw, CallToolResult), f"tool '{name}' did not complete"
+    return raw.content
 
 
 async def tool_result(server, name, args):

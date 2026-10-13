@@ -137,7 +137,7 @@ must use `uvx --from x-use-mcp==3.0.0 x-use mcp`.
 
 The current MCP runtime uses async Patchright Chromium with separate account contexts. Your configuration, cookies, drafts, queue and action journals live under `X_USE_HOME`. AI-client and optional model-provider data handling depends on the client and provider you choose.
 
-The protocol implementation uses the maintained MCP Python SDK v1 line (`mcp>=1.30,<2`).
+The protocol implementation uses the MCP Python SDK v2 line (`mcp>=2.3,<3`). It negotiates handshake protocol versions 2024-11-05 through 2025-11-25 with existing clients.
 
 Draft mode is enabled by default for ordinary publishing. Messages, follows and thread starts require draft approval. Direct publishing mode, explicit queue processing, opt-in auto-drain and the legacy batch runner have separate execution paths. Review the [configuration reference](https://github.com/ihuzaifashoukat/x-use/blob/main/docs/CONFIG_REFERENCE.md) before changing these settings.
 

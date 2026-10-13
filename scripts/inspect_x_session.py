@@ -248,7 +248,7 @@ async def _mcp_probe(args, pin, report):
         "tool_timeout_seconds": 180}}
     async def tool(server, name, **kwargs):
         for attempt in range(4):
-            content, _ = await server.call_tool(name, {"account": args.account, **kwargs})
+            content = (await server.call_tool(name, {"account": args.account, **kwargs})).content
             result = json.loads(content[0].text)
             if result.get("ok"):
                 return result

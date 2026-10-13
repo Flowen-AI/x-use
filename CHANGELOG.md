@@ -10,6 +10,18 @@ project follows [semantic versioning](https://semver.org/). See
 
 ## [Unreleased]
 
+### Changed
+
+- The MCP server moved to the MCP Python SDK v2 line (`mcp>=2.3,<3`); v1 is no
+  longer supported. `FastMCP` became `MCPServer`, which now receives the package
+  version directly for `serverInfo`. Tool names, schemas, annotations and result
+  envelopes are unchanged on the wire, and the 2024-11-05 through 2025-11-25
+  handshake versions still negotiate. Code that imports x-use's server must use
+  v2's snake_case model attributes (`is_error`, `structured_content`).
+- Dependency refresh: openai 3.27, twine 7 for release checks, a setuptools 84
+  build floor, Python 3.14 in the Docker image, and GitHub Actions `setup-node`
+  v7, `setup-uv` v10 and `labeler` v7.
+
 ## [3.1.0] - 2026-10-12
 
 ### Added

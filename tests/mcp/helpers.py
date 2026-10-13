@@ -99,17 +99,23 @@ def make_fake_publisher(instances: list) -> type:
 async def call_tool(server, name: str, arguments: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Invoke an MCP tool and return its result as a plain dict.
 
-    Parses the JSON text content block (stable across FastMCP structured-
+    Parses the JSON text content block (stable across MCPServer structured-
     output wrapping). If a tool ever raised through the guard instead of
     returning an error envelope, this would raise and fail the test.
     """
     result = await server.call_tool(name, arguments or {})
-    if isinstance(result, CallToolResult):
-        content = result.content
-    else:
-        content, _structured = result
+    assert isinstance(result, CallToolResult), f"tool '{name}' did not complete"
+    content = result.content
     assert content, f"tool '{name}' returned no content blocks"
     return json.loads(content[0].text)
+
+
+async def wire_call(server, name: str, arguments: Dict[str, Any]) -> CallToolResult:
+    """Call a tool through an in-memory client session, so the result has the
+    full protocol path: argument validation, isError and structuredContent."""
+    from mcp import Client
+    async with Client(server) as client:
+        return await client.call_tool(name, arguments)
 
 
 def assert_error_envelope(result: Dict[str, Any], message_part: Optional[str] = None) -> Dict[str, Any]:

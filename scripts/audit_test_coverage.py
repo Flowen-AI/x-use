@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 
 class Observer:
@@ -34,7 +34,7 @@ def main():
     names = protocol['tools']
     stdio_successes = {call['tool'] for call in protocol['tool_calls'] if call['ok']}
     observer = Observer()
-    original = FastMCP.call_tool
+    original = MCPServer.call_tool
 
     async def observed(server, name, *args, **kwargs):
         record = {'tool': name, 'node': observer.current, 'outcome': 'raised'}
@@ -50,7 +50,7 @@ def main():
         finally:
             observer.calls.append(record)
 
-    with patch.object(FastMCP, 'call_tool', observed):
+    with patch.object(MCPServer, 'call_tool', observed):
         code = pytest.main(arguments[1:] if arguments[:1] == ['--'] else arguments, plugins=[observer])
     rows = []
     for name in sorted(names):
@@ -62,7 +62,7 @@ def main():
                      'outcomes': {key: sum(c['outcome'] == key for c in calls)
                                   for key in ('ok', 'error', 'raised', 'unclassified')},
                      'tests': sorted({c['node'].split('[')[0] for c in calls})})
-    report = {'pytest_exit_code': int(code), 'scope': 'in-process FastMCP.call_tool in passing isolated tests',
+    report = {'pytest_exit_code': int(code), 'scope': 'in-process MCPServer.call_tool in passing isolated tests',
               'live_X_verified': False, 'arguments_or_payloads_recorded': False,
               'tool_count': len(rows), 'tools': rows}
     report['missing_positive_evidence'] = [row['tool'] for row in rows

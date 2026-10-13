@@ -137,7 +137,7 @@ async def test_server_registers_exactly_the_expected_tools(mcp_server):
 async def test_tool_schemas_accept_documented_params(mcp_server):
     tools = {t.name: t for t in await mcp_server.list_tools()}
     for name, spec in EXPECTED_TOOLS.items():
-        schema = tools[name].inputSchema or {}
+        schema = tools[name].input_schema or {}
         properties = set(schema.get("properties", {}))
         required = set(schema.get("required", []))
         assert spec["params"] <= properties, f"{name}: missing params {spec['params'] - properties}"

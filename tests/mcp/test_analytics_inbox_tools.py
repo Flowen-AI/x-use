@@ -1,6 +1,6 @@
 """New owner analytics and inbox options retain the shared read policy."""
 import pytest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from xuse.browser.errors import BrowserBlocked
 from xuse.mcp.analytics_tools import register_analytics_tools
@@ -12,7 +12,7 @@ from test_profile_read_tools import profile_server  # noqa: F401
 @pytest.fixture
 def read_server(profile_server):
     env = profile_server
-    env.server = FastMCP("bounded-owner-reads")
+    env.server = MCPServer("bounded-owner-reads")
     register_browser_tools(env.server, env.ctx)
     register_analytics_tools(env.server, env.ctx)
     browser = env.pool.browser
@@ -89,7 +89,7 @@ async def test_analytics_requires_active_configured_account(read_server, account
 async def test_analytics_has_readonly_annotation_and_distinct_scope(read_server):
     env = read_server
     tool = next(tool for tool in await env.server.list_tools() if tool.name == "get_account_analytics")
-    assert tool.annotations.readOnlyHint is True and tool.annotations.openWorldHint is True
+    assert tool.annotations.read_only_hint is True and tool.annotations.open_world_hint is True
     result = await call_tool(env.server, tool.name, {"account": "a"})
     assert result["status"] == "premium_required" and result["metrics"] == []
     assert not result["available"] and result["period"] is None
@@ -124,6 +124,6 @@ async def test_analytics_pin_safe_read_does_not_clear_durable_pause(read_server)
 async def test_inbox_folder_schema_exposes_exact_choices(read_server):
     tools = {tool.name: tool for tool in await read_server.server.list_tools()}
     for name in ("get_inbox", "search_conversations"):
-        folder = tools[name].inputSchema["properties"]["folder"]
+        folder = tools[name].input_schema["properties"]["folder"]
         assert folder["enum"] == ["inbox", "requests", "other"]
         assert folder["default"] == "inbox"

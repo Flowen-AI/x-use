@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 def register_write_tools(server, ctx: Ctx) -> None:
-    """Register the write-side tools (except engage) on the FastMCP server."""
+    """Register the write-side tools (except engage) on the MCP server."""
 
     @server.tool(annotations=PUBLISHES_TO_X)
     @guard

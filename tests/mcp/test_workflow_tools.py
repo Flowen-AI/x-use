@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from types import SimpleNamespace
 
 import pytest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from xuse.browser.errors import BrowserActionError
 from xuse.mcp.drafts import DraftStore
@@ -59,7 +59,7 @@ def workflow_server(make_config_loader, tmp_path):
                           draft_store=DraftStore(tmp_path / "drafts.jsonl"),
                           outreach_store=OutreachStore(tmp_path / "outreach.sqlite3"),
                           safety_store=SafetyStore(tmp_path / "policy.sqlite3"))
-    server = FastMCP("workflow-tests")
+    server = MCPServer("workflow-tests")
     register_workflow_tools(server, ctx)
     return server, ctx
 
@@ -89,8 +89,8 @@ async def test_one_context_read_creates_exact_pending_draft_with_clear_next_step
     assert result["next_steps"]["recovery"]["resolution_tool"] == "resolve_action_outcome"
     assert "Nothing was sent" in result["message"]
     tool = (await server.list_tools())[0]
-    assert not tool.annotations.readOnlyHint and tool.annotations.openWorldHint
-    assert not tool.annotations.destructiveHint and not tool.annotations.idempotentHint
+    assert not tool.annotations.read_only_hint and tool.annotations.open_world_hint
+    assert not tool.annotations.destructive_hint and not tool.annotations.idempotent_hint
 
 
 @pytest.mark.asyncio

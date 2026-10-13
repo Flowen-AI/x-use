@@ -5,8 +5,7 @@ from types import SimpleNamespace
 from typing import Any, Dict
 
 import pytest
-from mcp import types
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from xuse.mcp.drafts import DraftStore
 from xuse.mcp.executor import ToolError
@@ -16,7 +15,7 @@ from xuse.mcp.tools import guard
 from xuse.queue.store import QueueJournalError
 
 from helpers import (  # noqa: F401
-    accounts, browser_factory, call_tool, config_loader, mcp_settings, session_pool,
+    accounts, browser_factory, call_tool, config_loader, mcp_settings, session_pool, wire_call,
 )
 from test_playwright_integration import async_server  # noqa: F401
 
@@ -24,7 +23,7 @@ from test_playwright_integration import async_server  # noqa: F401
 @pytest.mark.asyncio
 @pytest.mark.parametrize("return_type", [dict, dict[str, Any], Dict[str, Any]])
 async def test_guard_errors_have_protocol_error_flag_and_action_id(return_type):
-    server = FastMCP("isolated-audit")
+    server = MCPServer("isolated-audit")
 
     async def denied() -> dict:
         error = ToolError("Inspect this action before retrying.")
@@ -35,11 +34,9 @@ async def test_guard_errors_have_protocol_error_flag_and_action_id(return_type):
     denied.__annotations__["return"] = return_type
     server.tool()(guard(denied))
 
-    response = await server._mcp_server.request_handlers[types.CallToolRequest](
-        types.CallToolRequest(method="tools/call", params=types.CallToolRequestParams(name="denied", arguments={})))
-    result = response.root
-    assert result.isError is True
-    envelope = result.structuredContent.get("result", result.structuredContent)
+    result = await wire_call(server, "denied", {})
+    assert result.is_error is True
+    envelope = result.structured_content.get("result", result.structured_content)
     assert envelope["error"]["action_id"] == "synthetic-action"
     assert json.loads(result.content[0].text) == envelope
 
@@ -184,17 +181,15 @@ async def test_confirmed_write_retains_action_id_if_draft_outcome_append_fails(a
 @pytest.mark.asyncio
 @pytest.mark.parametrize("return_type", [dict[str, Any], Dict[str, Any]])
 async def test_queue_journal_errors_preserve_protocol_recovery_ids(return_type):
-    server = FastMCP("isolated-queue-audit")
+    server = MCPServer("isolated-queue-audit")
 
     async def failed_outcome() -> dict:
         raise QueueJournalError("synthetic-queue", "synthetic-action")
 
     failed_outcome.__annotations__["return"] = return_type
     server.tool()(guard(failed_outcome))
-    response = await server._mcp_server.request_handlers[types.CallToolRequest](
-        types.CallToolRequest(method="tools/call", params=types.CallToolRequestParams(name="failed_outcome", arguments={})))
-    result = response.root
-    assert result.isError
+    result = await wire_call(server, "failed_outcome", {})
+    assert result.is_error
     envelope = json.loads(result.content[0].text)
     assert envelope["error"]["reason"] == "queue_journal_failure"
     assert envelope["error"]["queue_id"] == "synthetic-queue"

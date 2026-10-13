@@ -71,10 +71,10 @@ def test_runtime_sdk_floor_and_requirements_file_stay_in_sync():
     requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8")
     lock = (ROOT / "uv.lock").read_text(encoding="utf-8")
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert '"mcp>=1.30.0,<2"' in metadata
+    assert '"mcp>=2.3.0,<3"' in metadata
     assert "-e ." in requirements
-    assert '{ name = "mcp", specifier = ">=1.30.0,<2" }' in lock
-    assert "mcp>=1.30,<2" in readme
+    assert '{ name = "mcp", specifier = ">=2.3.0,<3" }' in lock
+    assert "mcp>=2.3,<3" in readme
 
 
 def test_install_wrappers_quote_paths_and_fail_explicit_update_errors():

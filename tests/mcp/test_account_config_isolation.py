@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from xuse.browser.cookies import load_account_cookies
 from xuse.mcp import accounts_tools
@@ -14,7 +14,7 @@ from helpers import call_tool
 
 
 def server_for(loader, pool=None):
-    server = FastMCP("isolated-accounts")
+    server = MCPServer("isolated-accounts")
     accounts_tools.register_account_tools(server, SimpleNamespace(config_loader=loader, session_pool=pool))
     return server
 

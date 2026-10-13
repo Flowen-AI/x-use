@@ -65,7 +65,7 @@ def _verified_context(result: Any, handle: str, post_limit: int) -> dict[str, An
 def register_workflow_tools(server, ctx) -> None:
     """Register one composed read-and-stage workflow; never execute delivery."""
 
-    @server.tool(annotations=LOCAL_WRITE.model_copy(update={"openWorldHint": True}))
+    @server.tool(annotations=LOCAL_WRITE.model_copy(update={"open_world_hint": True}))
     @guard
     async def prepare_outreach(account: str, profile: str, message_text: str,
                                post_limit: int = 5) -> dict[str, Any]:

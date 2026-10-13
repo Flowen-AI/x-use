@@ -58,12 +58,12 @@ EntryPoint(name=%r, value=%r, group='console_scripts').load()()
             async with stdio_client(params, errlog=errors) as (read, write):
                 async with ClientSession(read, write) as session:
                     initialized = await session.initialize()
-                    assert initialized.serverInfo.name == "x-use"
-                    assert initialized.serverInfo.version == xuse.__version__
+                    assert initialized.server_info.name == "x-use"
+                    assert initialized.server_info.version == xuse.__version__
                     tools = await session.list_tools()
                     assert "list_accounts" in {tool.name for tool in tools.tools}
                     accounts = await session.call_tool("list_accounts", {})
-                    assert not accounts.isError
+                    assert not accounts.is_error
                     assert json.loads(accounts.content[0].text)["accounts"] == []
 
     await asyncio.wait_for(check(), timeout=90)

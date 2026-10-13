@@ -3,25 +3,23 @@ import json
 from typing import Any, Dict
 
 import pytest
-from mcp import types
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from xuse.browser.errors import BrowserActionError
 from xuse.mcp.executor import ToolError
 from xuse.mcp.tools import guard
+from helpers import wire_call
 
 
 async def wire_error(error, return_type=dict[str, Any]):
-    server = FastMCP("isolated-diagnostics-audit")
+    server = MCPServer("isolated-diagnostics-audit")
 
     async def unconfirmed() -> dict:
         raise error
 
     unconfirmed.__annotations__["return"] = return_type
     server.tool()(guard(unconfirmed))
-    response = await server._mcp_server.request_handlers[types.CallToolRequest](
-        types.CallToolRequest(method="tools/call", params=types.CallToolRequestParams(name="unconfirmed", arguments={})))
-    return response.root
+    return await wire_call(server, "unconfirmed", {})
 
 
 @pytest.mark.asyncio
@@ -36,12 +34,12 @@ async def test_send_diagnostics_wire_preserves_safe_primitives_and_recovery(retu
                 "send_control_connected": False}
     error.diagnostics = dict(expected)
     result = await wire_error(error, return_type)
-    assert result.isError is True
+    assert result.is_error is True
     envelope = json.loads(result.content[0].text)
     assert envelope["error"]["reason"] == "send_unconfirmed"
     assert envelope["error"]["action_id"] == "synthetic-action"
     assert envelope["error"]["diagnostics"] == expected
-    assert result.structuredContent.get("result", result.structuredContent) == envelope
+    assert result.structured_content.get("result", result.structured_content) == envelope
 
 
 @pytest.mark.asyncio
@@ -57,7 +55,7 @@ async def test_send_diagnostics_strips_source_content_and_invalid_primitive_valu
     envelope = json.loads(result.content[0].text)
     assert envelope["error"]["diagnostics"] == {"schema_version": 1, "stage": "confirmation_timeout", "observer_armed": False}
     assert "synthetic-private-value" not in result.model_dump_json()
-    assert result.isError and envelope["error"]["action_id"] == "synthetic-action"
+    assert result.is_error and envelope["error"]["action_id"] == "synthetic-action"
 
 
 @pytest.mark.asyncio
@@ -68,7 +66,7 @@ async def test_send_diagnostics_unsupported_schema_is_omitted(diagnostics):
     error = BrowserActionError("send_unconfirmed")
     error.diagnostics = diagnostics
     result = await wire_error(error)
-    assert result.isError
+    assert result.is_error
     assert "diagnostics" not in json.loads(result.content[0].text)["error"]
     assert "synthetic-private-value" not in result.model_dump_json()
 

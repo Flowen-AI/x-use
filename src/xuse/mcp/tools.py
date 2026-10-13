@@ -167,7 +167,7 @@ async def scrape_single_tweet(ctx: Ctx, account_id: str, tweet_url: str, tweet_i
 
 
 def register_tools(server, ctx: Ctx) -> None:
-    """Register all x-use tools on the FastMCP server."""
+    """Register all x-use tools on the MCP server."""
 
     @server.tool(annotations=READ_ONLY_LOCAL)
     @guard
@@ -310,7 +310,7 @@ def register_tools(server, ctx: Ctx) -> None:
             images = await asyncio.to_thread(images_for_tweet, original)
         return with_images(envelope, images)
 
-    @server.tool(annotations=PUBLISHES_TO_X.model_copy(update={"destructiveHint": True}))
+    @server.tool(annotations=PUBLISHES_TO_X.model_copy(update={"destructive_hint": True}))
     @guard
     async def approve_draft(draft_id: str) -> Dict[str, Any]:
         """Execute a pending draft created by a write tool. Runs the exact

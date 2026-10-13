@@ -45,7 +45,7 @@ def test_fetch_image_returns_jpeg_image_content(monkeypatch):
     monkeypatch.setattr(m.requests, "get",
                         lambda url, timeout, **kwargs: FakeResponse(make_png_bytes(3000, 2000)))
     block = m.fetch_image("https://pbs.twimg.com/media/a.jpg")
-    assert block is not None and block.type == "image" and block.mimeType == "image/jpeg"
+    assert block is not None and block.type == "image" and block.mime_type == "image/jpeg"
     from PIL import Image
     decoded = Image.open(io.BytesIO(base64.b64decode(block.data)))
     assert max(decoded.size) <= m.MAX_DIMENSION  # 3000px shrunk to 1024
@@ -125,7 +125,7 @@ def test_with_images_builds_call_tool_result(monkeypatch):
     envelope = {"ok": True, "media": []}
     result = m.with_images(envelope, [image])
     assert isinstance(result, CallToolResult)
-    assert result.structuredContent == envelope
+    assert result.structured_content == envelope
     assert isinstance(result.content[0], TextContent)
     assert json.loads(result.content[0].text) == envelope
     assert any(isinstance(c, ImageContent) for c in result.content[1:])

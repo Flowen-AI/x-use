@@ -10,7 +10,7 @@ configuration, but they do not have identical capabilities or policy boundaries.
 | Path | Responsibility |
 |---|---|
 | `src/xuse/cli.py` | `init`, `doctor`, `mcp`, `run`, and skills commands |
-| `src/xuse/mcp/server.py` | FastMCP construction, dependency injection, tool registration and shutdown |
+| `src/xuse/mcp/server.py` | MCPServer construction, dependency injection, tool registration and shutdown |
 | `src/xuse/mcp/stdio.py` | Reserve stdout for MCP protocol messages |
 | `src/xuse/mcp/browser_bridge.py` | Account/action policy, browser dispatch, timeouts and recovery metadata |
 | `src/xuse/browser/sessions.py` | Shared browser process, isolated contexts, account ownership, capacity and cleanup |

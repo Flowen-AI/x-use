@@ -1,4 +1,4 @@
-"""x-use MCP server — official MCP Python SDK v1.x ``FastMCP`` over stdio.
+"""x-use MCP server — official MCP Python SDK v2.x ``MCPServer`` over stdio.
 
 Exposes the engine as typed tools (see ``tools.py``): read-only/status tools,
 draft-gated immediate writes, the scheduled-action queue, and account
@@ -27,9 +27,9 @@ Config (all optional, additive — ``config/settings.json``)::
                        "max_actions_per_account": 3}
     }
 
-SDK note: this server uses the maintained v1 API (``mcp>=1.30,<2``).
-SDK v2 is stable, but has breaking server, client and result-model changes;
-see the upstream migration guide before changing the dependency boundary.
+SDK note: this server uses the v2 API (``mcp>=2.3,<3``). v2 renamed v1's
+``FastMCP`` to ``MCPServer`` and exposes protocol models with snake_case
+attributes (camelCase stays the wire format and the constructor alias).
 """
 import asyncio
 import logging
@@ -43,7 +43,7 @@ from xuse.mcp.stdio import enforce_stdio_stdout_hygiene as _enforce_stdio_stdout
 if __name__ == "__main__":
     _enforce_stdio_stdout_hygiene()
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from xuse import __version__
 from xuse.core.config_loader import ConfigLoader, PROJECT_ROOT
@@ -125,8 +125,8 @@ def _is_active_account(config_loader: ConfigLoader, account_id: str) -> bool:
 
 
 @asynccontextmanager
-async def _lifespan(server: FastMCP):
-    """FastMCP lifespan: start the opt-in auto-drain worker on boot and stop
+async def _lifespan(server: MCPServer):
+    """MCPServer lifespan: start the opt-in auto-drain worker on boot and stop
     it before shutdown (which then closes the warm browser sessions)."""
     scheduler = getattr(server, "xuse_auto_drain", None)
     try:
@@ -151,8 +151,8 @@ def create_server(
     queue_runner: Optional[QueueRunner] = None,
     safety_store=None,
     outreach_store=None,
-) -> FastMCP:
-    """Build the FastMCP server. All dependencies are injectable so contract
+) -> MCPServer:
+    """Build the MCPServer. All dependencies are injectable so contract
     tests can supply a custom config, a fake-browser pool, tmp stores, and a
     fake-sleep queue runner without touching real browsers or data files."""
     config_loader = config_loader or ConfigLoader()
@@ -231,17 +231,10 @@ def create_server(
             interval_seconds=queue_cfg.auto_drain.interval_seconds,
             max_actions_per_account=queue_cfg.auto_drain.max_actions_per_account,
         )
-    server = FastMCP(SERVER_NAME, instructions=SERVER_INSTRUCTIONS, lifespan=_lifespan)
-    # FastMCP's constructor takes no `version`, so the low-level server's stays
-    # None and the handshake reports the *SDK* version in serverInfo (clients
-    # and directory scanners were being told x-use was "1.28.1"). The wrapped
-    # Server does accept one; set it directly. Guarded because this reaches
-    # through FastMCP's internals: a future SDK that renames the attribute
-    # should cost us a wrong version string, not a server that will not boot.
-    try:
-        server._mcp_server.version = __version__
-    except Exception:  # pragma: no cover - defensive against SDK churn
-        logger.warning("Could not set the advertised MCP server version.", exc_info=True)
+    # Pass `version` explicitly: without it the handshake's serverInfo
+    # advertises an empty version instead of the x-use package version.
+    server = MCPServer(SERVER_NAME, instructions=SERVER_INSTRUCTIONS, version=__version__,
+                       lifespan=_lifespan)
     _tools.register_tools(server, ctx)
     server.xuse_ctx = ctx  # reachable for shutdown hooks and tests
     if scheduler is not None:
@@ -255,7 +248,7 @@ def create_server(
     return server
 
 
-async def shutdown(server: FastMCP) -> None:
+async def shutdown(server: MCPServer) -> None:
     """Stop owned background cycles before closing their browser sessions."""
     ctx: Union[Ctx, None] = getattr(server, "xuse_ctx", None)
     if ctx is None:
