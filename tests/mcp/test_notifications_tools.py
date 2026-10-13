@@ -2,18 +2,17 @@
 import json
 
 import pytest
-from mcp import types
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from xuse.mcp.notifications_tools import register_notifications_tools
-from helpers import assert_error_envelope, call_tool
+from helpers import assert_error_envelope, call_tool, wire_call
 from test_profile_read_tools import profile_server  # noqa: F401
 
 
 @pytest.fixture
 def notifications_server(profile_server):
     env = profile_server
-    env.server = FastMCP("notifications-contract")
+    env.server = MCPServer("notifications-contract")
     register_notifications_tools(env.server, env.ctx)
 
     async def notifications(limit, *, view):
@@ -44,10 +43,8 @@ async def test_notifications_options_forwarded_once_with_unknown_state(notificat
 async def test_notifications_invalid_options_fail_before_browser(notifications_server, arguments):
     env = notifications_server
     # The protocol validates Literal values before invoking the handler.
-    response = await env.server._mcp_server.request_handlers[types.CallToolRequest](
-        types.CallToolRequest(method="tools/call", params=types.CallToolRequestParams(
-            name="get_notifications", arguments={"account": "a", **arguments})))
-    assert response.root.isError
+    response = await wire_call(env.server, "get_notifications", {"account": "a", **arguments})
+    assert response.is_error
     assert env.pool.started == 0 and env.pool.browser.calls == []
     assert env.ctx.safety_store.status("a")["daily_used"] == {}
 
@@ -65,11 +62,9 @@ async def test_notifications_protocol_schema_and_read_annotation(notifications_s
     env = notifications_server
     tool, = await env.server.list_tools()
     assert tool.name == "get_notifications"
-    assert tool.inputSchema["properties"]["view"]["enum"] == ["all", "mentions"]
-    assert set(tool.inputSchema["required"]) == {"account"}
-    assert tool.annotations.readOnlyHint and tool.annotations.openWorldHint
-    result = await env.server._mcp_server.request_handlers[types.CallToolRequest](
-        types.CallToolRequest(method="tools/call", params=types.CallToolRequestParams(
-            name="get_notifications", arguments={"account": "a"})))
-    assert not result.root.isError
-    assert result.root.structuredContent == json.loads(result.root.content[0].text)
+    assert tool.input_schema["properties"]["view"]["enum"] == ["all", "mentions"]
+    assert set(tool.input_schema["required"]) == {"account"}
+    assert tool.annotations.read_only_hint and tool.annotations.open_world_hint
+    result = await wire_call(env.server, "get_notifications", {"account": "a"})
+    assert not result.is_error
+    assert result.structured_content == json.loads(result.content[0].text)

@@ -105,7 +105,7 @@ def test_small_streamed_image_still_works(monkeypatch):
     resp = StreamResponse(chunks, headers={"Content-Length": str(len(png))})
     monkeypatch.setattr(m.requests, "get", lambda url, timeout, stream, **kwargs: resp)
     block = m.fetch_image("https://pbs.twimg.com/media/a.jpg")
-    assert block is not None and block.mimeType == "image/jpeg"
+    assert block is not None and block.mime_type == "image/jpeg"
 
 
 def test_unparseable_content_length_falls_through_to_streaming_cap(monkeypatch):

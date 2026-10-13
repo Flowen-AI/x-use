@@ -76,7 +76,7 @@ async def test_every_tool_declares_annotations(mcp_server):
 @pytest.mark.asyncio
 async def test_read_only_set_is_exactly_as_declared(mcp_server):
     ann = await _annotations(mcp_server)
-    actual = {name for name, a in ann.items() if a.readOnlyHint}
+    actual = {name for name, a in ann.items() if a.read_only_hint}
     assert actual == READ_ONLY, (
         f"unexpected read-only: {sorted(actual - READ_ONLY)}; "
         f"no longer read-only: {sorted(READ_ONLY - actual)}"
@@ -86,7 +86,7 @@ async def test_read_only_set_is_exactly_as_declared(mcp_server):
 @pytest.mark.asyncio
 async def test_open_world_set_is_exactly_as_declared(mcp_server):
     ann = await _annotations(mcp_server)
-    actual = {name for name, a in ann.items() if a.openWorldHint}
+    actual = {name for name, a in ann.items() if a.open_world_hint}
     assert actual == OPEN_WORLD, (
         f"newly reaches the network: {sorted(actual - OPEN_WORLD)}; "
         f"no longer reaches it: {sorted(OPEN_WORLD - actual)}"
@@ -97,7 +97,7 @@ async def test_open_world_set_is_exactly_as_declared(mcp_server):
 async def test_config_removal_and_destructive_approval_are_declared(mcp_server):
     """Approval can delete posts/conversations, while preparing drafts is local."""
     ann = await _annotations(mcp_server)
-    actual = {name for name, a in ann.items() if a.destructiveHint}
+    actual = {name for name, a in ann.items() if a.destructive_hint}
     assert actual == DESTRUCTIVE
 
 
@@ -105,8 +105,8 @@ async def test_config_removal_and_destructive_approval_are_declared(mcp_server):
 async def test_read_only_tools_claim_no_write_behaviour(mcp_server):
     """destructiveHint and idempotentHint are meaningless when readOnlyHint is set."""
     for name, a in (await _annotations(mcp_server)).items():
-        if a.readOnlyHint:
-            assert not a.destructiveHint, f"{name} is read-only but flagged destructive"
+        if a.read_only_hint:
+            assert not a.destructive_hint, f"{name} is read-only but flagged destructive"
 
 
 @pytest.mark.asyncio
@@ -115,8 +115,8 @@ async def test_the_publish_gates_are_not_read_only_and_reach_x(mcp_server):
     ann = await _annotations(mcp_server)
     for name in PUBLISH_GATES:
         assert ann[name] is not None, f"{name} lost its annotations"
-        assert not ann[name].readOnlyHint, f"{name} must not be advertised as read-only"
-        assert ann[name].openWorldHint, f"{name} publishes to X and must say so"
+        assert not ann[name].read_only_hint, f"{name} must not be advertised as read-only"
+        assert ann[name].open_world_hint, f"{name} publishes to X and must say so"
 
 
 @pytest.mark.asyncio

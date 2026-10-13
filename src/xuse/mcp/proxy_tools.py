@@ -244,7 +244,7 @@ def _mutate_pools(ctx: Ctx, fn) -> Dict[str, Any]:
 
 
 def register_proxy_tools(server, ctx: Ctx) -> None:
-    """Register the four proxy-management tools on the FastMCP server."""
+    """Register the four proxy-management tools on the MCP server."""
 
     @server.tool(annotations=READ_ONLY_LOCAL)
     @guard

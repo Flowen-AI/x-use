@@ -209,7 +209,7 @@ def register_browser_tools(server, ctx):
         await asyncio.to_thread(ctx.safety_store.pause, account, "manual_pause")
         return ok_(account=account, paused=True)
 
-    @server.tool(annotations=LOCAL_WRITE_IDEMPOTENT.model_copy(update={"openWorldHint": True}))
+    @server.tool(annotations=LOCAL_WRITE_IDEMPOTENT.model_copy(update={"open_world_hint": True}))
     @guard
     async def resume_account_actions(account: str) -> dict[str, Any]:
         """After resolving a challenge, probe the signed-in home page and clear the local pause. Does not reset budgets."""
@@ -282,7 +282,7 @@ def register_browser_tools(server, ctx):
                         result["draft_missing"] = True
         return ok_(account=account, **result)
 
-    @server.tool(annotations=LOCAL_WRITE_IDEMPOTENT.model_copy(update={"openWorldHint": True}))
+    @server.tool(annotations=LOCAL_WRITE_IDEMPOTENT.model_copy(update={"open_world_hint": True}))
     @guard
     async def unlock_inbox(account: str, pin_env_var: str = "XUSE_INBOX_PIN") -> dict[str, Any]:
         """Unlock the owner's encrypted inbox once using a server environment variable. PIN never appears in tool arguments, drafts, logs or stored state. Inspect get_account_safety for remaining attempts and reset time; never loop on a rejected PIN or challenge."""

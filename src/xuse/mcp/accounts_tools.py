@@ -194,7 +194,7 @@ def _commit_cookie_copy(rollback: Optional[_CookieRollback]) -> None:
 
 
 def register_account_tools(server, ctx: Ctx) -> None:
-    """Register the five account-management tools on the FastMCP server."""
+    """Register the five account-management tools on the MCP server."""
 
     @server.tool(annotations=READ_ONLY_LOCAL)
     @guard

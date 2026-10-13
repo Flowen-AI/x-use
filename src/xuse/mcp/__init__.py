@@ -1,9 +1,9 @@
 """x-use MCP server package.
 
-FastMCP-based (MCP Python SDK v1.x) stdio server exposing typed tools with
+MCPServer-based (MCP Python SDK v2.x) stdio server exposing typed tools with
 draft mode (default on) and a lazy, warm per-account browser pool.
 
-- ``server.py``      — FastMCP app, server factory, stdio entry point
+- ``server.py``      — MCPServer app, server factory, stdio entry point
 - ``tools.py``       — tool helpers, read-only tools, approve_draft, registrar
 - ``write_tools.py`` — post_tweet, generate_and_post, reply_to_tweet, run_cycle
 - ``engage.py``      — engage tool (analyzer-gated like/retweet)

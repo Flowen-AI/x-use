@@ -3,7 +3,7 @@ import json
 from types import SimpleNamespace
 
 import pytest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from xuse.mcp.drafts import DraftStore
 from xuse.mcp.outreach_tools import register_outreach_tools
@@ -27,7 +27,7 @@ def outreach_server(tmp_path, make_config_loader):
     ctx = SimpleNamespace(config_loader=config, session_pool=LocalAccountLookup(),
                           draft_store=DraftStore(tmp_path / "drafts.jsonl"), draft_mode=False,
                           outreach_store=OutreachStore(tmp_path / "outreach.sqlite3"))
-    server = FastMCP("local-outreach-test")
+    server = MCPServer("local-outreach-test")
     register_outreach_tools(server, ctx)
     return server, ctx
 
@@ -57,9 +57,9 @@ async def test_local_tools_workflow_stages_even_with_draft_mode_off(outreach_ser
     assert ctx.draft_store.list()[0].status == "pending"
     tools = await server.list_tools()
     assert len(tools) == 13
-    assert all(tool.annotations.openWorldHint is False for tool in tools)
+    assert all(tool.annotations.open_world_hint is False for tool in tools)
     reads = {"list_leads", "get_lead", "get_campaign", "list_campaigns", "get_campaign_summary", "preview_campaign_message"}
-    assert all(tool.annotations.readOnlyHint == (tool.name in reads) for tool in tools)
+    assert all(tool.annotations.read_only_hint == (tool.name in reads) for tool in tools)
 
 
 @pytest.mark.asyncio

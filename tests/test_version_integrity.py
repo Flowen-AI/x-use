@@ -76,11 +76,11 @@ def test_changelog_documents_the_current_version():
 
 @pytest.mark.asyncio
 async def test_mcp_handshake_advertises_the_package_version(make_config_loader, tmp_path):
-    """FastMCP takes no `version`, so without the fix in server.py the handshake
-    reports the MCP SDK's version as x-use's."""
+    """MCPServer defaults `version` to an empty string, so without the explicit
+    argument in server.py the handshake would not advertise x-use's version."""
     from xuse.mcp.drafts import DraftStore
     from xuse.mcp.server import create_server
 
     server = create_server(config_loader=make_config_loader(accounts=[]),
                            draft_store=DraftStore(tmp_path / "d.jsonl"))
-    assert server._mcp_server.version == xuse.__version__
+    assert server.version == xuse.__version__

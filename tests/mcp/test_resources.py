@@ -23,7 +23,7 @@ async def read(server, uri: str) -> str:
 @pytest.mark.asyncio
 async def test_registers_the_documented_resources(mcp_server):
     listed = {str(r.uri) for r in await mcp_server.list_resources()}
-    templated = {t.uriTemplate for t in await mcp_server.list_resource_templates()}
+    templated = {t.uri_template for t in await mcp_server.list_resource_templates()}
     assert listed == STATIC_URIS
     assert templated == TEMPLATE_URIS
 
@@ -31,7 +31,7 @@ async def test_registers_the_documented_resources(mcp_server):
 @pytest.mark.asyncio
 async def test_every_resource_declares_a_mime_type(mcp_server):
     for resource in await mcp_server.list_resources():
-        assert resource.mimeType, f"{resource.uri} has no mimeType"
+        assert resource.mime_type, f"{resource.uri} has no mimeType"
 
 
 @pytest.mark.asyncio

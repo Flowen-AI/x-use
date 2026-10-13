@@ -49,7 +49,7 @@ def _resolve(ctx, account: str) -> str:
 
 
 def register_prompts(server, ctx) -> None:
-    """Register workflow prompts on the FastMCP server."""
+    """Register workflow prompts on the MCP server."""
 
     @server.prompt(description="Read an X conversation with attributed media, compose a reviewed multi-post thread or reply thread, and follow durable progress without duplicate submissions.")
     def thread_workflow(account: str = "", tweet_url: str = "") -> str:

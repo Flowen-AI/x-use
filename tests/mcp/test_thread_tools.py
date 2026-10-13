@@ -9,7 +9,7 @@ import importlib
 import os
 from pathlib import Path
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from PIL import Image
 import pytest
 
@@ -83,7 +83,7 @@ def thread_server(tmp_path, make_config_loader):
         "read_interval_seconds": 0, "write_interval_seconds": 0,
         "max_actions_per_minute": 100}, clock=lambda: now[0])
     ctx.thread_store = ThreadStore(tmp_path / "threads.sqlite3")
-    server = FastMCP("Synthetic thread test")
+    server = MCPServer("Synthetic thread test")
     register_thread_tools(server, ctx)
     return server, ctx, now
 

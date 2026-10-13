@@ -50,7 +50,7 @@ def _find(ctx: Ctx, account_id: str) -> Dict[str, Any]:
 
 
 def register_resources(server, ctx: Ctx) -> None:
-    """Register the four read-only resources on the FastMCP server."""
+    """Register the four read-only resources on the MCP server."""
 
     @server.resource(
         "xuse://accounts",

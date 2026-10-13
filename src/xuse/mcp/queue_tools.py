@@ -86,7 +86,7 @@ def _enqueue(ctx: Ctx, *, account_id: str, action: str, payload: Dict[str, Any],
 
 
 def register_queue_tools(server, ctx: Ctx) -> None:
-    """Register the five queue tools on the FastMCP server."""
+    """Register the five queue tools on the MCP server."""
 
     @server.tool(annotations=LOCAL_WRITE)
     @guard

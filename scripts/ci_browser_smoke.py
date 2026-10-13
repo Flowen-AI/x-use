@@ -215,8 +215,8 @@ async def package_protocol_check(directory: Path, expect_installed: bool, driver
     assert exposed == declared, "MCP protocol and server tool registries disagree."
     required = {"list_accounts", "search_tweets", "get_inbox", "send_message", "follow_profile", "create_campaign"}
     assert required <= exposed, "Installed wheel is missing core MCP tools."
-    assert all(tool.inputSchema.get("type") == "object" for tool in tools.tools)
-    return {"server": initialized.serverInfo.name, "tool_count": len(exposed),
+    assert all(tool.input_schema.get("type") == "object" for tool in tools.tools)
+    return {"server": initialized.server_info.name, "tool_count": len(exposed),
             "prompt_count": len(prompts.prompts), "browser_started": False,
             "entrypoints": [item[0] for item in entrypoints], "invalid_protocol_messages": counter.count}
 

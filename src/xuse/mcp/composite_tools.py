@@ -26,7 +26,7 @@ MIN_RELEVANCE = 0.5
 
 
 def register_composite_tools(server, ctx: Ctx) -> None:
-    """Register the composite (server-LLM) tools on the FastMCP server."""
+    """Register the composite (server-LLM) tools on the MCP server."""
 
     @server.tool(annotations=STAGES_GENERATED_DRAFT)
     @guard

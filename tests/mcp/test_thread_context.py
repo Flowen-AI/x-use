@@ -60,12 +60,12 @@ async def test_thread_image_content_maps_to_exact_post(thread_server, monkeypatc
         "tweet_url": "https://x.com/ada/status/123", "include_images": True})
     assert isinstance(raw, CallToolResult)
     assert raw.content[1] == block
-    assert raw.structuredContent["image_references"][0] == {
+    assert raw.structured_content["image_references"][0] == {
         "tweet_id": "123", "media_index": 0, "kind": "photo",
         "url": "https://pbs.twimg.com/media/chart.png", "alt_text": "Chart",
         "attached": True, "content_index": 1}
-    assert raw.structuredContent["media_coverage"]["attached"] == 1
-    assert json.loads(raw.content[0].text) == raw.structuredContent
+    assert raw.structured_content["media_coverage"]["attached"] == 1
+    assert json.loads(raw.content[0].text) == raw.structured_content
 
 
 @pytest.mark.asyncio

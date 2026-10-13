@@ -3,7 +3,7 @@ import json
 from types import SimpleNamespace
 
 import pytest
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from helpers import call_tool, make_account
 from xuse.mcp import support_tools
@@ -228,7 +228,7 @@ def health_server(make_config_loader, tmp_path):
     safety = SafetyStore(tmp_path / "health.sqlite3", {"read_interval_seconds": 0,
         "write_interval_seconds": 0}, clock=lambda: clock[0])
     ctx = Ctx(loader, pool, DraftStore(), safety_store=safety)
-    server = FastMCP("isolated-health")
+    server = MCPServer("isolated-health")
     support_tools.register_support_tools(server, ctx)
     return server, ctx, raw, clock, cold
 

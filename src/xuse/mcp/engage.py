@@ -56,7 +56,7 @@ async def _relevance_passes(ctx: Ctx, analyzer: TweetAnalyzer, account, tweet) -
 
 
 def register_engage_tool(server, ctx: Ctx) -> None:
-    """Register the engage tool on the FastMCP server."""
+    """Register the engage tool on the MCP server."""
 
     @server.tool(annotations=PUBLISHES_TO_X)
     @guard
