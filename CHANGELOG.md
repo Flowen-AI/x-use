@@ -10,6 +10,11 @@ project follows [semantic versioning](https://semver.org/). See
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-13
+
+A maintenance release: the same 82 tools on the MCP Python SDK v2 line, with
+refreshed dependencies. MCP clients need no configuration changes.
+
 ### Changed
 
 - The MCP server moved to the MCP Python SDK v2 line (`mcp>=2.3,<3`); v1 is no
@@ -21,6 +26,10 @@ project follows [semantic versioning](https://semver.org/). See
 - Dependency refresh: openai 3.27, twine 7 for release checks, a setuptools 84
   build floor, Python 3.14 in the Docker image, and GitHub Actions `setup-node`
   v7, `setup-uv` v10 and `labeler` v7.
+- Dependabot auto-merge also accepts signed Docker base-image patch and minor
+  updates that omit the `update-type` field, derived from one unambiguous
+  version transition. Major, variant and prerelease changes still need
+  maintainer review. [Contributor automation](docs/CONTRIBUTOR_AUTOMATION.md).
 
 ## [3.1.0] - 2026-10-12
 
@@ -530,7 +539,8 @@ CLI.
 
 - `python src/main.py` still works, with a warning pointing to `x-use run`.
 
-[Unreleased]: https://github.com/ihuzaifashoukat/x-use/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/ihuzaifashoukat/x-use/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/ihuzaifashoukat/x-use/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/ihuzaifashoukat/x-use/compare/v3.0.0...v3.1.0
 [3.0.0]: https://github.com/ihuzaifashoukat/x-use/compare/v2.4.1...v3.0.0
 [2.4.1]: https://github.com/ihuzaifashoukat/x-use/compare/v2.4.0...v2.4.1

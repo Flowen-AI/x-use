@@ -3,8 +3,8 @@
 X-Use is a Python MCP server and CLI for X (Twitter). Use these guides to
 install it, try a bounded research workflow, review drafts, or contribute a fix.
 
-**Version 3.1.0 contains 82 tools**, adding runtime diagnostics, campaign previews
-and publishing/inbox controls to the 70 tools in 3.0.0. For release-specific behavior, read
+**Version 3.2.0 contains 82 tools**, unchanged from 3.1.0, which added runtime
+diagnostics, campaign previews and publishing/inbox controls to the 70 tools in 3.0.0. For release-specific behavior, read
 the documentation at the matching Git tag and consult the [changelog](../CHANGELOG.md).
 
 ## Start here
