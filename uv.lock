@@ -1025,7 +1025,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "3.26.1"
+version = "3.27.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -1035,9 +1035,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/36/f5/c9accd2d4077b0e56ffb63e9a943a656797c715bbd7c80f13f401865a350/openai-3.26.1.tar.gz", hash = "sha256:4b64060155596aece83aa81d270f326ee081b83da70a0d4b50091a0c60e9151c", size = 1820349, upload-time = "2026-10-08T08:54:23.757Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/71/41/d0fdf732f76433de3e9c4c6fbe5d83975c1e8379d46a48d0d7aa631b1c5a/openai-3.27.0.tar.gz", hash = "sha256:b84a941b8e488cd29c1555dd6edda4aa57452add9e3a0eb29eb732cec49e4468", size = 1822874, upload-time = "2026-10-09T13:48:35.936Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1a/ee/f6042342ff42116ff8018849ef24a950ef367730ab0f9912c08c2f9b8aa0/openai-3.26.1-py3-none-any.whl", hash = "sha256:6a05a4615c678922aa16a1a560cfbe059cb20d5b7ab9753d0bf38b41fce1c67a", size = 2163859, upload-time = "2026-10-08T08:54:21.963Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/e1/e99eef310f4d41c19509de49ac8fa829dc217e4e3fa6e5ce01eeb75a3242/openai-3.27.0-py3-none-any.whl", hash = "sha256:342cc911201c0b7acc5b566e4c71212c05b00a30b4b4c4c67b65d96e1db66c8c", size = 2168575, upload-time = "2026-10-09T13:48:33.659Z" },
 ]
 
 [[package]]
@@ -2163,7 +2163,7 @@ wheels = [
 
 [[package]]
 name = "twine"
-version = "6.2.0"
+version = "7.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "id" },
@@ -2176,9 +2176,9 @@ dependencies = [
     { name = "rich" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e0/a8/949edebe3a82774c1ec34f637f5dd82d1cf22c25e963b7d63771083bbee5/twine-6.2.0.tar.gz", hash = "sha256:e5ed0d2fd70c9959770dce51c8f39c8945c574e18173a7b81802dab51b4b75cf", size = 172262, upload-time = "2025-09-04T15:43:17.255Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/3c/58f808a359700f39a967dffede33efeac809262c03303fa3eec6afff8f49/twine-7.0.0.tar.gz", hash = "sha256:85cdb29c518efef867360ae4acd4b0dfd61c8654a22fca08e6f8539f05022177", size = 215032, upload-time = "2026-07-27T15:59:00.825Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3a/7a/882d99539b19b1490cac5d77c67338d126e4122c8276bf640e411650c830/twine-6.2.0-py3-none-any.whl", hash = "sha256:418ebf08ccda9a8caaebe414433b0ba5e25eb5e4a927667122fbe8f829f985d8", size = 42727, upload-time = "2025-09-04T15:43:15.994Z" },
+    { url = "https://files.pythonhosted.org/packages/96/08/ddcdc06225eaad6de0e48e1002b06d919dbde20582d0662c7af51308e5d6/twine-7.0.0-py3-none-any.whl", hash = "sha256:b854164df26db268af05f49aa5c0344b10e27a494343ff05b1e0bad3b135f5a7", size = 43204, upload-time = "2026-07-27T15:58:59.26Z" },
 ]
 
 [[package]]
@@ -2633,7 +2633,7 @@ requires-dist = [
     { name = "requests" },
     { name = "selenium" },
     { name = "selenium-stealth" },
-    { name = "twine", marker = "extra == 'dev'", specifier = ">=6,<7" },
+    { name = "twine", marker = "extra == 'dev'", specifier = ">=7.0.0,<8" },
     { name = "typer", specifier = ">=0.12" },
     { name = "undetected-chromedriver" },
     { name = "webdriver-manager" },
