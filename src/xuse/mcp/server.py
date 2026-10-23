@@ -31,6 +31,7 @@ SDK note: this server uses the v2 API (``mcp>=2.3,<3``). v2 renamed v1's
 ``FastMCP`` to ``MCPServer`` and exposes protocol models with snake_case
 attributes (camelCase stays the wire format and the constructor alias).
 """
+import os
 import asyncio
 import logging
 import sys
@@ -236,6 +237,8 @@ def create_server(
     server = MCPServer(SERVER_NAME, instructions=SERVER_INSTRUCTIONS, version=__version__,
                        lifespan=_lifespan)
     _tools.register_tools(server, ctx)
+    if os.environ.get("X_USE_READ_ONLY") == "1":
+        _drop_write_tools(server)
     server.xuse_ctx = ctx  # reachable for shutdown hooks and tests
     if scheduler is not None:
         server.xuse_auto_drain = scheduler
@@ -247,6 +250,23 @@ def create_server(
     )
     return server
 
+
+
+def _drop_write_tools(server: MCPServer) -> int:
+    """Flowen patch: with X_USE_READ_ONLY=1 keep only tools annotated readOnlyHint=True.
+
+    A tool with no annotation counts as a write tool, so an unannotated future
+    tool fails closed.
+    """
+    manager = server._tool_manager
+    dropped = [
+        name for name, tool in list(manager._tools.items())
+        if not getattr(getattr(tool, "annotations", None), "read_only_hint", False)
+    ]
+    for name in dropped:
+        manager.remove_tool(name)
+    logger.info("Read-only mode: removed %d write tools, kept %d.", len(dropped), len(manager._tools))
+    return len(dropped)
 
 async def shutdown(server: MCPServer) -> None:
     """Stop owned background cycles before closing their browser sessions."""
